@@ -1,6 +1,6 @@
 # 🏥 LM Studio Project - AI Assistant for Medical Diagnosis of ENT Diseases
 
-[English](README_EN.md) | [Русский](README.md)
+[English](README.md) | [Russian](README_ru.md)
 
 > 📦 **Deploying on a new computer?** See [Deployment Guide](DEPLOYMENT_EN.md) | [Инструкция по развертыванию](DEPLOYMENT.md)
 
