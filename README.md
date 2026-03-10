@@ -475,32 +475,6 @@ curl http://localhost:8000/health
 # Check Ollama connection
 curl http://localhost:8000/ollama/models
 ```
-
----
-
-## 📊 Project Statistics
-
-- **Backend:** ~8500+ lines of code
-- **Frontend:** ~6400+ lines of code
-- **API Endpoints:** 60+
-- **Modules:** 14 main modules
-- **Version:** 1.0.0
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a branch for new feature
-3. Make changes
-4. Create Pull Request
-
----
-
-## 📝 License
-
-This project is developed for research and educational purposes.
-
 ---
 
 ## 🔗 Useful Links
