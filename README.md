@@ -503,12 +503,6 @@ This project is developed for research and educational purposes.
 
 ---
 
-## 👥 Authors
-
-The project is developed for medical diagnosis of ENT diseases using modern AI technologies.
-
----
-
 ## 🔗 Useful Links
 
 - [Ollama](https://ollama.ai/) - Local language models
