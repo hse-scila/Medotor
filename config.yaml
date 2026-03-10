@@ -1,0 +1,121 @@
+anaconda:
+  auto_activate_env: true
+  conda_path: null
+  cuda_version: '11.8'
+  enable_gpu: true
+  environment_name: lm_studio
+  install_dependencies: true
+  pip_path: null
+  python_path: null
+  pytorch_version: 2.0.0
+  transformers_version: 4.30.0
+api:
+  cors_origins:
+  - '*'
+  enable_rate_limiting: false
+  enable_websocket: true
+  host: 0.0.0.0
+  log_level: info
+  max_request_size: 104857600
+  port: 8000
+  rate_limit_requests: 100
+  rate_limit_window: 60
+  reload: false
+  websocket_timeout: 300
+  workers: 1
+database:
+  connection_pool_size: 10
+  connection_timeout: 30
+  database: lm_studio_project
+  enable_ssl: false
+  host: localhost
+  password: ''
+  port: 5432
+  sqlite_path: data/patients.db
+  ssl_cert_path: null
+  type: sqlite
+  username: ''
+file_processing:
+  allowed_extensions:
+  - .pdf
+  - .txt
+  - .doc
+  - .docx
+  - .jpg
+  - .jpeg
+  - .png
+  - .bmp
+  - .tiff
+  - .tif
+  auto_cleanup_temp_files: true
+  cleanup_interval: 3600
+  enable_docx_processing: true
+  enable_image_processing: true
+  enable_ocr: true
+  enable_pdf_processing: true
+  image_formats:
+  - .jpg
+  - .jpeg
+  - .png
+  - .bmp
+  - .tiff
+  - .tif
+  max_file_size: 52428800
+  ocr_languages: rus+eng
+  temp_dir: temp/uploads
+  tesseract_cmd: null
+logging:
+  backup_count: 5
+  enable_console: true
+  enable_file: true
+  enable_rag_logging: true
+  file_path: logs/app.log
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+  max_file_size: 10485760
+  rag_log_path: logs/rag_system.log
+ollama:
+  connection_check_interval: 60
+  default_model: qwen2.5:latest
+  embedding_model: embeddinggemma:latest
+  enable_offline_mode: true
+  gpu_layers: -1
+  max_retries: 2
+  max_tokens: 2000
+  num_batch: 512
+  num_ctx: 2048
+  num_thread: 4
+  offline_timeout: 5
+  temperature: 0.7
+  timeout: 10
+  top_k: 40
+  top_p: 0.9
+  url: http://127.0.0.1:11434
+rag:
+  chunk_overlap: 200
+  chunk_size: 1000
+  collection_name: documents
+  enable_file_chunking: true
+  enable_memorag: true
+  max_chunks_per_document: 100
+  memory_cache_size: 1000
+  ollama_embedding_model: null
+  similarity_threshold: 0.7
+  use_ollama_embeddings: false
+  vector_store_type: faiss
+system:
+  backup_interval: 86400
+  data_dir: data
+  debug_mode: false
+  enable_auto_backup: true
+  enable_health_checks: true
+  health_check_interval: 30
+  logs_dir: logs
+  max_backup_files: 7
+  project_name: LM Studio Project
+  temp_dir: temp
+  version: 1.0.0
+vision_llm:
+  model: qwen3-vl:8b
+  pages_dir: temp/vision_pages
+  poppler_path: null

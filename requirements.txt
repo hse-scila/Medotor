@@ -1,0 +1,39 @@
+# Основные зависимости для работы с моделями
+torch>=2.0.0
+transformers>=4.30.0
+accelerate>=0.20.0
+
+# API сервер
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+httpx>=0.24.0
+
+# Дополнительные библиотеки
+requests>=2.31.0
+numpy>=1.24.0
+gradio>=3.40.0
+huggingface-hub>=0.16.0
+tokenizers>=0.13.0
+
+# RAG система
+faiss-cpu>=1.7.4
+chromadb>=0.4.15
+sentence-transformers>=2.2.2
+langchain>=0.1.0
+langchain-community>=0.0.10
+
+# Обработка файлов
+PyPDF2>=3.0.1
+python-docx>=0.8.11
+python-magic>=0.4.27
+aiofiles>=23.2.1
+
+# Vision-LLM и PDF → изображения
+pdf2image>=1.17.0
+Pillow>=10.0.0
+ollama>=0.3.0
+
+# Примечание: PyTorch с CUDA должен быть установлен в окружении TorchLama
+# conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia

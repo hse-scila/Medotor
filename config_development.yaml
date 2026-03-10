@@ -1,0 +1,109 @@
+# Пример конфигурации для разработки
+# config_development.yaml
+
+ollama:
+  url: "http://localhost:11434"
+  timeout: 30
+  offline_timeout: 5
+  max_retries: 2
+  embedding_model: "nomic-embed-text"
+  default_model: "qwen2.5:latest"
+  gpu_layers: 20
+  num_ctx: 2048
+  num_batch: 256
+  num_thread: 2
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  max_tokens: 100
+  enable_offline_mode: true
+  connection_check_interval: 15
+
+database:
+  type: "sqlite"
+  host: "localhost"
+  port: 5432
+  database: "lm_studio_dev"
+  username: ""
+  password: ""
+  sqlite_path: "data/dev_patients.db"
+  connection_pool_size: 5
+  connection_timeout: 15
+  enable_ssl: false
+  ssl_cert_path: null
+
+anaconda:
+  environment_name: "lm_studio_dev"
+  python_path: null
+  conda_path: null
+  pip_path: null
+  enable_gpu: true
+  cuda_version: "11.8"
+  pytorch_version: "2.0.0"
+  transformers_version: "4.30.0"
+  auto_activate_env: true
+  install_dependencies: true
+
+rag:
+  vector_store_type: "faiss"
+  collection_name: "dev_documents"
+  use_ollama_embeddings: false
+  ollama_embedding_model: "nomic-embed-text"
+  chunk_size: 500
+  chunk_overlap: 100
+  max_chunks_per_document: 50
+  similarity_threshold: 0.6
+  enable_memorag: true
+  memory_cache_size: 100
+  enable_file_chunking: true
+
+api:
+  host: "127.0.0.1"
+  port: 8000
+  workers: 1
+  reload: true
+  log_level: "DEBUG"
+  cors_origins: ["*"]
+  enable_websocket: true
+  websocket_timeout: 300
+  max_request_size: 52428800  # 50MB
+  enable_rate_limiting: false
+  rate_limit_requests: 100
+  rate_limit_window: 60
+
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/dev_app.log"
+  max_file_size: 5242880  # 5MB
+  backup_count: 3
+  enable_console: true
+  enable_file: true
+  enable_rag_logging: true
+  rag_log_path: "logs/dev_rag_system.log"
+
+file_processing:
+  temp_dir: "temp/dev_uploads"
+  max_file_size: 10485760  # 10MB
+  allowed_extensions: [".pdf", ".txt", ".doc", ".docx", ".jpg", ".jpeg", ".png"]
+  enable_ocr: true
+  ocr_languages: "rus+eng"
+  enable_pdf_processing: true
+  enable_docx_processing: true
+  enable_image_processing: true
+  image_formats: [".jpg", ".jpeg", ".png"]
+  auto_cleanup_temp_files: true
+  cleanup_interval: 1800  # 30 minutes
+
+system:
+  project_name: "LM Studio Project Development"
+  version: "1.0.0-dev"
+  debug_mode: true
+  data_dir: "data/dev"
+  logs_dir: "logs/dev"
+  temp_dir: "temp/dev"
+  enable_auto_backup: false
+  backup_interval: 86400
+  max_backup_files: 3
+  enable_health_checks: true
+  health_check_interval: 15

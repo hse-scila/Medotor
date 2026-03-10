@@ -1,0 +1,108 @@
+# Пример конфигурации для продакшена
+# config_production.yaml
+
+ollama:
+  url: "http://ollama-server:11434"
+  timeout: 60
+  offline_timeout: 15
+  max_retries: 5
+  embedding_model: "nomic-embed-text"
+  default_model: "qwen2.5:latest"
+  gpu_layers: -1
+  num_ctx: 4096
+  num_batch: 1024
+  num_thread: 8
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  max_tokens: 200
+  enable_offline_mode: true
+  connection_check_interval: 60
+
+database:
+  type: "postgresql"
+  host: "postgres-server"
+  port: 5432
+  database: "lm_studio_production"
+  username: "lm_studio_user"
+  password: "${DB_PASSWORD}"  # Переменная окружения
+  connection_pool_size: 20
+  connection_timeout: 60
+  enable_ssl: true
+  ssl_cert_path: "/etc/ssl/certs/postgres.crt"
+
+anaconda:
+  environment_name: "lm_studio_prod"
+  python_path: "/opt/anaconda3/envs/lm_studio_prod/bin/python"
+  conda_path: "/opt/anaconda3/bin/conda"
+  pip_path: "/opt/anaconda3/envs/lm_studio_prod/bin/pip"
+  enable_gpu: true
+  cuda_version: "11.8"
+  pytorch_version: "2.0.0"
+  transformers_version: "4.30.0"
+  auto_activate_env: true
+  install_dependencies: false
+
+rag:
+  vector_store_type: "chroma"
+  collection_name: "production_documents"
+  use_ollama_embeddings: true
+  ollama_embedding_model: "nomic-embed-text"
+  chunk_size: 1500
+  chunk_overlap: 300
+  max_chunks_per_document: 200
+  similarity_threshold: 0.8
+  enable_memorag: true
+  memory_cache_size: 5000
+  enable_file_chunking: true
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  reload: false
+  log_level: "WARNING"
+  cors_origins: ["https://yourdomain.com"]
+  enable_websocket: true
+  websocket_timeout: 600
+  max_request_size: 209715200  # 200MB
+  enable_rate_limiting: true
+  rate_limit_requests: 1000
+  rate_limit_window: 3600
+
+logging:
+  level: "WARNING"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "/var/log/lm_studio/app.log"
+  max_file_size: 52428800  # 50MB
+  backup_count: 10
+  enable_console: false
+  enable_file: true
+  enable_rag_logging: true
+  rag_log_path: "/var/log/lm_studio/rag_system.log"
+
+file_processing:
+  temp_dir: "/tmp/lm_studio_uploads"
+  max_file_size: 104857600  # 100MB
+  allowed_extensions: [".pdf", ".txt", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"]
+  enable_ocr: true
+  ocr_languages: "rus+eng"
+  enable_pdf_processing: true
+  enable_docx_processing: true
+  enable_image_processing: true
+  image_formats: [".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"]
+  auto_cleanup_temp_files: true
+  cleanup_interval: 1800  # 30 minutes
+
+system:
+  project_name: "LM Studio Project Production"
+  version: "1.0.0"
+  debug_mode: false
+  data_dir: "/var/lib/lm_studio/data"
+  logs_dir: "/var/log/lm_studio"
+  temp_dir: "/tmp/lm_studio"
+  enable_auto_backup: true
+  backup_interval: 43200  # 12 hours
+  max_backup_files: 14
+  enable_health_checks: true
+  health_check_interval: 60

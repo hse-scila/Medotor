@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- <link rel="stylesheet" href="patients_styles.css"> -->
+    <!-- Font Awesome (иконки) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Локальные ресурсы вместо CDN -->
+    <style>
+        /* Встроенные стили Font Awesome для основных иконок */
+        .fas, .far, .fab {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands";
+            font-weight: 900;
+        }
+        .fa-check:before { content: "\f00c"; }
+        .fa-times:before { content: "\f00d"; }
+        .fa-spinner:before { content: "\f110"; }
+        .fa-upload:before { content: "\f093"; }
+        .fa-download:before { content: "\f019"; }
+        .fa-trash:before { content: "\f1f8"; }
+        .fa-search:before { content: "\f002"; }
+        .fa-plus:before { content: "\f067"; }
+        .fa-edit:before { content: "\f044"; }
+        .fa-save:before { content: "\f0c7"; }
+        .fa-cancel:before { content: "\f05e"; }
+        .fa-refresh:before { content: "\f021"; }
+        .fa-cog:before { content: "\f013"; }
+        .fa-info:before { content: "\f129"; }
+        .fa-warning:before { content: "\f071"; }
+        .fa-error:before { content: "\f12a"; }
+        .fa-success:before { content: "\f058"; }
+        .fa-chat:before { content: "\f075"; }
+        .fa-file:before { content: "\f15b"; }
+        .fa-folder:before { content: "\f07b"; }
+        .fa-user:before { content: "\f007"; }
+        .fa-database:before { content: "\f1c0"; }
+        .fa-server:before { content: "\f233"; }
+        .fa-network-wired:before { content: "\f6ff"; }
+        .fa-wifi:before { content: "\f1eb"; }
+        .fa-wifi-slash:before { content: "\f6ac"; }
+        .fa-circle:before { content: "\f111"; }
+        .fa-circle-check:before { content: "\f058"; }
+        .fa-circle-xmark:before { content: "\f057"; }
+        .fa-circle-exclamation:before { content: "\f06a"; }
+        .fa-circle-info:before { content: "\f05a"; }
+        .fa-circle-question:before { content: "\f059"; }
+        .fa-circle-plus:before { content: "\f055"; }
+        .fa-circle-minus:before { content: "\f056"; }
+        .fa-circle-play:before { content: "\f144"; }
+        .fa-circle-pause:before { content: "\f28b"; }
+        .fa-circle-stop:before { content: "\f28d"; }
+        .fa-circle-arrow-up:before { content: "\f0aa"; }
+        .fa-circle-arrow-down:before { content: "\f0ab"; }
+        .fa-circle-arrow-left:before { content: "\f0a8"; }
+        .fa-circle-arrow-right:before { content: "\f0a9"; }
+        .fa-circle-notch:before { content: "\f1ce"; }
+        .fa-circle-dot:before { content: "\f192"; }
+        .fa-circle-half-stroke:before { content: "\f042"; }
+        .fa-circle-check:before { content: "\f058"; }
+        .fa-circle-xmark:before { content: "\f057"; }
+        .fa-circle-exclamation:before { content: "\f06a"; }
+        .fa-circle-info:before { content: "\f05a"; }
+        .fa-circle-question:before { content: "\f059"; }
+        .fa-circle-plus:before { content: "\f055"; }
+        .fa-circle-minus:before { content: "\f056"; }
+        .fa-circle-play:before { content: "\f144"; }
+        .fa-circle-pause:before { content: "\f28b"; }
+        .fa-circle-stop:before { content: "\f28d"; }
+        .fa-circle-arrow-up:before { content: "\f0aa"; }
+        .fa-circle-arrow-down:before { content: "\f0ab"; }
+        .fa-circle-arrow-left:before { content: "\f0a8"; }
+        .fa-circle-arrow-right:before { content: "\f0a9"; }
+        .fa-circle-notch:before { content: "\f1ce"; }
+        .fa-circle-dot:before { content: "\f192"; }
+        .fa-circle-half-stroke:before { content: "\f042"; }
+    </style>
+    <!-- Реальная библиотека XLSX (SheetJS) для экспорта в .xlsx -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+    <style>
+        /* Применяем светлую тему сразу при загрузке, до выполнения JavaScript */
+        body {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div class="app-container">
+        <!-- Верхняя панель -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>AI Assistant</span>
+                </div>
+            </div>
+            <div class="top-bar-center">
+                <div class="model-selector">
+                    <select id="modelSelect">
+                        <option value="">Select a model...</option>
+                    </select>
+                    <button id="loadModelBtn" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Load
+                    </button>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <div class="theme-toggle">
+                    <button id="themeToggle" class="btn btn-secondary" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+                <div class="status-indicator" id="statusIndicator">
+                    <i class="fas fa-circle"></i>
+                    <span>Disconnected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контейнер -->
+        <div class="main-container">
+            <!-- Боковая панель -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-cog"></i> Settings</h3>
+                    <div class="setting-group">
+                        <label for="temperature">Temperature:</label>
+                        <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                        <span id="temperatureValue">0.7</span>
+                    </div>
+                    <div class="setting-group">
+                        <label for="maxTokens">Max Tokens:</label>
+                        <input type="number" id="maxTokens" min="1" max="2000" value="2000">
+                    </div>
+                    <div class="setting-group">
+                        <label for="topP">Top P:</label>
+                        <input type="range" id="topP" min="0" max="1" step="0.05" value="0.9">
+                        <span id="topPValue">0.9</span>
+                    </div>
+                    <div class="setting-group">
+                        <label for="topK">Top K:</label>
+                        <input type="number" id="topK" min="1" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-comment-dots"></i> System Prompt</h3>
+                    <div class="setting-group">
+                        <label for="systemPrompt">Prompt:</label>
+                        <textarea id="systemPrompt" rows="6" placeholder="Enter a system prompt...">Ты профессиональный медицинский AI-ассистент со специализацией в оториноларингологии (ЛОР) на русском языке.
+
+ТВОЯ РОЛЬ:
+- Предоставлять медицинскую информацию и консультации по вопросам ЛОР-заболеваний
+- Анализировать симптомы и давать рекомендации
+- Помогать в интерпретации медицинских данных и документов
+- Отвечать на вопросы о диагностике и лечении исключительно на русском языке.
+
+ПРАВИЛА ПРИОРИТЕТОВ:
+1. Данные пациента (если предоставлены) → высший приоритет
+2. Фрагменты базы знаний из MemoRAG (EPOS 2020, AAO-HNS, Минздрав РФ, ВОЗ и др.) → средний приоритет  
+   - Используй их напрямую и указывай источник
+   - Если в MemoRAG есть противоречия — отмечай это и предлагай варианты
+3. Общие медицинские знания → низший приоритет  
+Если информации нет — укажи честно, не придумывай.
+
+ОСОБЕННОСТИ РАБОТЫ С MEMORAG:
+- MemoRAG предоставляет фрагменты документов (гайдлайны, статьи, учебники) в отдельном блоке
+- Всегда используй эти фрагменты для подтверждения своих выводов
+- Явно указывай, что информация взята из документа MemoRAG («Согласно EPOS 2020…»)
+- Не изменяй формулировки рекомендаций из базы знаний без необходимости
+
+ПРАВИЛА ОБЩЕНИЯ:
+- Отвечай только на русском языке
+- Будь профессиональным, но понятным
+- Всегда подчеркивай, что это не замена врачебной консультации
+- При серьёзных симптомах обязательно рекомендуй обратиться к врачу
+- Используй медицинскую терминологию корректно
+- Будь кратким, но информативным
+
+ФОРМАТ ОТВЕТА:
+1.  Краткое заключение (10 предложений на русском языке)
+2.  Подробное объяснение
+3.  Указание источников (данные пациента, MemoRAG, общие знания)
+4. Рекомендации по дальнейшим действиям</textarea>
+                    </div>
+                    <div class="setting-group">
+                        <button id="saveSystemPromptBtn" class="btn btn-secondary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button id="clearSystemPromptBtn" class="btn btn-secondary">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="useSystemPrompt" checked> Use system prompt
+                        </label>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-server"></i> Ollama</h3>
+                    <div class="setting-group">
+                        <label for="ollamaUrl">Server URL:</label>
+                        <input type="text" id="ollamaUrl" value="http://127.0.0.1:11434" placeholder="http://127.0.0.1:11434">
+                    </div>
+                    <div class="setting-group">
+                        <div id="ollamaStatus" class="ollama-status">
+                            <p><i class="fas fa-spinner fa-spin"></i> Checking status...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="ollamaMode">Mode:</label>
+                        <select id="ollamaMode">
+                            <option value="balanced">Balanced (GPU+CPU)</option>
+                            <option value="gpu">GPU Only</option>
+                            <option value="cpu">CPU Only</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <button id="applyConfigBtn" class="btn btn-secondary">
+                            <i class="fas fa-cog"></i> Apply settings
+                        </button>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="selectedModelForAction">Model for actions:</label>
+                        <select id="selectedModelForAction">
+                            <option value="">Select a model...</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <button id="modelInfoBtn" class="btn btn-secondary">
+                            <i class="fas fa-info"></i> Info
+                        </button>
+                        <button id="removeModelBtn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-info-circle"></i> Info</h3>
+                    <div id="modelInfo" class="model-info">
+                        <p>No model loaded</p>
+                    </div>
+                </div>
+
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-terminal"></i> Console</h3>
+                    <div id="console" class="console">
+                        <div class="console-line">System initialized</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Основная область -->
+            <main class="main-content">
+                <!-- Вкладки -->
+                <div class="tabs">
+                    <div class="tab active" data-tab="chat">
+                        <i class="fas fa-comments"></i>
+                        <span>Chat</span>
+                    </div>
+                    <div class="tab" data-tab="rag">
+                        <i class="fas fa-database"></i>
+                        <span>RAG</span>
+                    </div>
+                    <div class="tab" data-tab="patients">
+                        <i class="fas fa-user-md"></i>
+                        <span>Patients</span>
+                    </div>
+                    <div class="tab" data-tab="api">
+                        <i class="fas fa-code"></i>
+                        <span>API</span>
+                    </div>
+                </div>
+
+                <!-- Контент вкладок -->
+                <div class="tab-content">
+                    <!-- Вкладка чата -->
+                    <div id="chatTab" class="tab-panel active">
+                        <!-- Скроллируемый контейнер для всего контента чата -->
+                        <div class="chat-scroll-container">
+                            <!-- Настройки чата -->
+                            <div class="chat-settings">
+                            <div class="setting-group">
+                            <label for="chatPatientSelect">Patient:</label>
+                                <select id="chatPatientSelect" class="select-input">
+                                    <option value="">Select a patient...</option>
+                                </select>
+                            </div>
+                            <div class="setting-group">
+                                <label>
+                                    <input type="checkbox" id="usePatientData" checked>
+                                    Include patient data in chat
+                                </label>
+                                <small>If enabled, the selected patient's documents are added to the MemoRAG context</small>
+                            </div>
+                            <div class="setting-group">
+                                <button id="clearChatHistoryBtn" class="btn btn-secondary">
+                                    <i class="fas fa-trash"></i> Clear history
+                                </button>
+                                <small>Clears chat history but keeps settings</small>
+                            </div>
+                            <div class="setting-group">
+                                <button id="viewPromptBtn" class="btn btn-info">
+                                    <i class="fas fa-eye"></i> View prompt
+                                </button>
+                                <small>Shows the prompt sent to the LLM before generation</small>
+                            </div>
+                            <div class="setting-group" id="promptPreviewContainer" style="display: none;">
+                                <div class="prompt-preview-box">
+                                    <div class="prompt-preview-header">
+                                        <strong>📝 Prompt for Ollama:</strong>
+                                        <button class="btn-close-preview" onclick="document.getElementById('promptPreviewContainer').style.display='none'">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <textarea id="promptPreviewText" readonly class="prompt-preview-text" rows="15"></textarea>
+                                    <div class="prompt-preview-actions">
+                                        <button class="btn btn-secondary btn-sm" id="copyPromptPreviewBtn">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-group">
+                                <div class="button-group">
+                                    <button id="exportChatHistoryBtn" class="btn btn-secondary">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                    <button id="importChatHistoryBtn" class="btn btn-secondary">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
+                                <small>Export/import chat history in JSON format</small>
+                                <input type="file" id="importChatHistoryInput" accept=".json" style="display: none;">
+                            </div>
+
+                            <!-- Автоматический анализ всех пациентов -->
+                            <div class="setting-group" style="border-top: 2px solid #3e3e42; padding-top: 15px; margin-top: 15px;">
+                                <h4 style="margin-bottom: 10px; color: #007acc;">
+                                    <i class="fas fa-robot"></i> Automatic Patient Analysis
+                                </h4>
+                                <div class="setting-group">
+                                    <label for="patientAnalysisQuestions">Questions:</label>
+                                    <textarea id="patientAnalysisQuestions" class="textarea-input" rows="4" placeholder="Enter questions for analysis (same for all patients)"></textarea>
+                                    <small>This query will be sent to LLM for each patient with their data, system prompt, and RAG/MemoRAG context</small>
+                                </div>
+                                <div class="setting-group">
+                                    <label>
+                                        <input type="checkbox" id="patientAnalysisUseMemoRag" checked>
+                                        Use MemoRAG
+                                    </label>
+                                </div>
+                                <div class="setting-group">
+                                    <label for="patientAnalysisPercent">Test percentage (%):</label>
+                                    <input type="number" id="patientAnalysisPercent" class="input-input" min="1" max="100" value="100" style="width: 100px;">
+                                    <small>Процент пациентов из базы данных для тестирования (1-100%)</small>
+                                    <div id="patientAnalysisCountInfo" style="margin-top: 5px; font-size: 12px; color: #888;">
+                                        Будет обработано: <span id="patientAnalysisCountValue">все</span> пациентов
+                                    </div>
+                                </div>
+                                <div class="setting-group">
+                                    <button id="runPatientAnalysisBtn" class="btn btn-success" style="width: 100%;">
+                                        <i class="fas fa-play"></i> RUN Patient: analysis
+                                    </button>
+                                    <button id="downloadPatientAnalysisBtn" class="btn btn-secondary" style="width: 100%; margin-top: 10px;" disabled>
+                                        <i class="fas fa-download"></i> Download Excel Results
+                                    </button>
+                                </div>
+                                <div id="patientAnalysisProgress" class="info-message" style="display: none; margin-top: 10px;">
+                                    <div style="margin-bottom: 10px;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span id="patientAnalysisProgressText">Preparing analysis...</span>
+                                    </div>
+                                    <!-- Прогресс-бар -->
+                                    <div class="progress-bar" style="width: 100%; height: 20px; background-color: #3e3e42; border-radius: 10px; overflow: hidden; margin-top: 10px;">
+                                        <div id="patientAnalysisProgressFill" class="progress-fill" style="height: 100%; background-color: #007acc; width: 0%; transition: width 0.3s ease;"></div>
+                                    </div>
+                                    <div style="margin-top: 5px; font-size: 12px; color: #888;">
+                                        <span id="patientAnalysisProgressCounter">0 / 0</span>
+                                        <span id="patientAnalysisCurrentPatient" style="margin-left: 10px;"></span>
+                                    </div>
+                                </div>
+                                <div id="patientAnalysisSummary" class="info-message" style="display: none; margin-top: 10px;"></div>
+                            </div>
+
+                        </div>
+                        
+                        <!-- Единое окно чата -->
+                        <div id="chatMessages" class="unified-chat-window">
+                            <div class="chat-entry system-entry">
+                                <span class="entry-label">System:</span>
+                                <span class="entry-content">Welcome to AI Assistant! Select a model and start chatting.</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Поле ввода (закреплено внизу) -->
+                        <div class="chat-input-container">
+                            <div class="chat-input-wrapper">
+                                <textarea id="chatInput" placeholder="Enter your message..." rows="3"></textarea>
+                                <button id="sendBtn" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div id="streamingIndicator" class="streaming-indicator" style="display: none;">
+                                <i class="fas fa-stream"></i>
+                                <span>Streaming generation...</span>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка RAG -->
+                    <div id="ragTab" class="tab-panel">
+                        <div class="rag-container">
+                            <!-- Настройки RAG -->
+                            <div class="rag-settings">
+                                <h3><i class="fas fa-cog"></i> RAG Settings</h3>
+                                
+                                <div class="setting-group">
+                                    <label for="ragVectorStore">Vector store:</label>
+                        <select id="ragVectorStore">
+                            <option value="chroma">Chroma (with metadata)</option>
+                            <option value="faiss">FAISS (fast)</option>
+                        </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label>
+                                        <input type="checkbox" id="useOllamaEmbeddings">
+                                        Use Ollama for embeddings
+                                    </label>
+                                </div>
+                                
+                                <div class="setting-group" id="ollamaEmbeddingGroup" style="display: none;">
+                                    <label for="ollamaEmbeddingModel">Embedding model:</label>
+                                    <select id="ollamaEmbeddingModel">
+                                        <option value="">Select a model...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="ragChunkSize">Chunk size (chars):</label>
+                                    <input type="number" id="ragChunkSize" min="100" max="5000" value="1000" class="number-input">
+                                    <small>Chunk size for processing (recommended 1000-2000)</small>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="ragChunkOverlap">Chunk overlap (chars):</label>
+                                    <input type="number" id="ragChunkOverlap" min="0" max="500" value="200" class="number-input">
+                                    <small>Number of overlapping characters between chunks</small>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <button id="configureRagBtn" class="btn btn-primary">
+                                        <i class="fas fa-cog"></i> Configure RAG
+                                    </button>
+                                    <button id="refreshRagStatsBtn" class="btn btn-secondary">
+                                        <i class="fas fa-sync-alt"></i> Refresh stats
+                                    </button>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="ragStatus">Status:</label>
+                                    <div id="ragStatus" class="rag-status">Not configured</div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="ragStats">Stats:</label>
+                                    <div id="ragStats" class="rag-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-label">Status:</span>
+                                            <span class="stat-value" id="ragStatusValue">Not configured</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Store:</span>
+                                            <span class="stat-value" id="ragVectorStoreType">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Documents:</span>
+                                            <span class="stat-value" id="ragDocCount">0</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Chunks:</span>
+                                            <span class="stat-value" id="ragChunkCount">0</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Dimension:</span>
+                                            <span class="stat-value" id="ragDimension">0</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Index size:</span>
+                                            <span class="stat-value" id="ragIndexSize">0 MB</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Embedding model:</span>
+                                            <span class="stat-value" id="ragEmbeddingModel">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Model type:</span>
+                                            <span class="stat-value" id="ragEmbeddingModelType">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Created:</span>
+                                            <span class="stat-value" id="ragEmbeddingCreatedAt">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-label">Ollama:</span>
+                                            <span class="stat-value" id="ragUseOllama">No</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div class="info-message">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i>
+                                            Chroma works out of the box, FAISS requires faiss-cpu
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Загрузка документов -->
+                            <div class="rag-documents">
+                                <h3><i class="fas fa-file-upload"></i> Upload documents</h3>
+                                
+                                <div class="setting-group">
+                                    <label for="ragFileUpload">Upload files:</label>
+                                    <input type="file" id="ragFileUpload" multiple accept=".pdf,.txt,.doc,.docx">
+                                    <div class="file-upload-info">
+                                        <small>Supported formats: PDF, TXT, DOC, DOCX</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label>
+                                        <input type="checkbox" id="enableFileChunking" checked>
+                                        <i class="fas fa-cut"></i> Split large files into parts
+                                    </label>
+                                    <small>Automatically splits files >10MB for stable processing</small>
+                                </div>
+                                
+                                <div class="setting-group" id="chunkingSettings" style="display: none;">
+                                    <label for="chunkSize">Chunk size (MB):</label>
+                                    <input type="number" id="chunkSize" value="5" min="1" max="50" step="1">
+                                    <small>Recommended 5–10 MB for stable processing</small>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <button id="uploadFileBtn" class="btn btn-secondary">
+                                        <i class="fas fa-upload"></i> Upload files
+                                    </button>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div id="uploadedFilesStatus" class="upload-status"></div>
+                                </div>
+                                
+                                <!-- Прогресс-бар для загрузки -->
+                                <div id="uploadProgress" class="progress-container" style="display: none;">
+                                    <div class="progress-header">
+                                        <span id="progressTitle">Creating embeddings...</span>
+                                        <div class="progress-controls">
+                                            <span id="progressPercent">0%</span>
+                                            <button id="stopEmbeddingBtn" class="btn btn-danger btn-sm" style="margin-left: 10px; display: none;">
+                                                <i class="fas fa-stop"></i> Stop
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="progressFill" class="progress-fill"></div>
+                                    </div>
+                                    <div class="progress-details">
+                                        <span id="progressDetails">Processing batch 1/109 (10 documents)</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="ragDocuments">Documents (text):</label>
+                                    <textarea id="ragDocuments" placeholder="Enter documents for RAG (one per line)"></textarea>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <button id="addDocumentsBtn" class="btn btn-secondary">
+                                        <i class="fas fa-plus"></i> Add documents
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Поиск в документах -->
+                            <div class="rag-search">
+                                <h3><i class="fas fa-search"></i> Search documents</h3>
+                                
+                                <div class="setting-group">
+                                    <label for="ragSearchQuery">Search:</label>
+                                    <input type="text" id="ragSearchQuery" placeholder="Search documents...">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <button id="searchDocumentsBtn" class="btn btn-secondary">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                                
+                                <div id="searchResults" class="search-results" style="display: none;">
+                                    <h4>Search results:</h4>
+                                    <div id="searchResultsList"></div>
+                                </div>
+                            </div>
+
+                            <!-- Управление RAG -->
+                            <div class="rag-management">
+                                <h3><i class="fas fa-tools"></i> Management</h3>
+                                
+                                <div class="setting-group">
+                                    <div class="button-group">
+                                        <button id="clearRagBtn" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Clear all documents
+                                        </button>
+                                        <button id="clearRagIndexBtn" class="btn btn-warning">
+                                            <i class="fas fa-database"></i> Clear index
+                                        </button>
+                                        <button id="resetRagBtn" class="btn btn-danger">
+                                            <i class="fas fa-bomb"></i> Full RAG reset
+                                        </button>
+                                    </div>
+                                    <div class="info-message">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>Clear documents:</strong> Removes all documents and index<br>
+                                            <strong>Clear index:</strong> Removes only the vector index<br>
+                                            <strong>Full reset:</strong> Removes everything and resets settings
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label>
+                                        <input type="checkbox" id="useRagInChat" checked>
+                                        Use RAG in chat
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Логи RAG -->
+                            <div class="rag-logs">
+                                <h3><i class="fas fa-file-alt"></i> RAG logs</h3>
+                                
+                                <div class="setting-group">
+                                    <div class="log-controls">
+                                        <button id="refreshLogsBtn" class="btn btn-secondary">
+                                            <i class="fas fa-refresh"></i> Refresh
+                                        </button>
+                                        <button id="clearLogsBtn" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Clear logs
+                                        </button>
+                                        <select id="logLevelFilter">
+                                            <option value="">All levels</option>
+                                            <option value="DEBUG">DEBUG</option>
+                                            <option value="INFO">INFO</option>
+                                            <option value="WARNING">WARNING</option>
+                                            <option value="ERROR">ERROR</option>
+                                            <option value="CRITICAL">CRITICAL</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="ragLogsContainer" class="rag-logs-container">
+                                    <div class="log-stats" id="logStats">
+                                        <span>Loading stats...</span>
+                                    </div>
+                                    <div class="log-entries" id="logEntries">
+                                        <div class="log-entry">Loading logs...</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MemoRAG система -->
+                            <div class="memorag-section">
+                                <h3><i class="fas fa-brain"></i> MemoRAG - Advanced memory</h3>
+                                
+                                <!-- Настройки MemoRAG -->
+                                <div class="memorag-settings">
+                                    <div class="setting-group">
+                                        <label>
+                                            <input type="checkbox" id="useMemoRag" checked style="display: none;">
+                                            <span style="color: #28a745; font-weight: bold;"><i class="fas fa-brain"></i> MemoRAG is always on</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="memoragChunksCount">Chunks for chat:</label>
+                                        <input type="number" id="memoragChunksCount" min="1" max="20" value="5" class="number-input">
+                                        <small>Number of relevant chunks added to chat context</small>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="memoragMemorySize">Memory size:</label>
+                                        <select id="memoragMemorySize">
+                                            <option value="5000">5,000 entries</option>
+                                            <option value="10000" selected>10,000 entries</option>
+                                            <option value="20000">20,000 entries</option>
+                                            <option value="50000">50,000 entries</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <button id="refreshMemoRagStatsBtn" class="btn btn-secondary">
+                                            <i class="fas fa-sync-alt"></i> Refresh memory stats
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Статистика MemoRAG -->
+                                <div class="memorag-stats">
+                                    <h4><i class="fas fa-chart-bar"></i> Memory stats</h4>
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <label>Total entries:</label>
+                                            <span id="memoragTotalEntries">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Facts:</label>
+                                            <span id="memoragFacts">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Concepts:</label>
+                                            <span id="memoragConcepts">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Relationships:</label>
+                                            <span id="memoragRelationships">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Summaries:</label>
+                                            <span id="memoragSummaries">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Indexed words:</label>
+                                            <span id="memoragIndexedWords">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Cache size:</label>
+                                            <span id="memoragCacheSize">-</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <label>Compression ratio:</label>
+                                            <span id="memoragCompressionRatio">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Управление MemoRAG -->
+                                <div class="memorag-management">
+                                    <h4><i class="fas fa-tools"></i> Memory management</h4>
+                                    
+                                    <div class="setting-group">
+                                        <div class="button-group">
+                                            <button id="migrateToMemoRagBtn" class="btn btn-primary">
+                                                <i class="fas fa-arrow-right"></i> Migrate existing data
+                                            </button>
+                                            <button id="checkMigrationStatusBtn" class="btn btn-secondary">
+                                                <i class="fas fa-info-circle"></i> Check status
+                                            </button>
+                                        </div>
+                                        <div class="info-message">
+                                            <small>
+                                                <i class="fas fa-info-circle"></i>
+                                                Migration adds all existing RAG documents into MemoRAG memory.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <div class="button-group">
+                                            <button id="clearMemoRagMemoryBtn" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i> Clear memory
+                                            </button>
+                                            <button id="exportMemoRagMemoryBtn" class="btn btn-secondary">
+                                                <i class="fas fa-download"></i> Export memory
+                                            </button>
+                                        </div>
+                                        <div class="info-message">
+                                            <small>
+                                                <i class="fas fa-info-circle"></i>
+                                                Clearing memory removes all saved entries. Export saves memory to a file.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Тестирование MemoRAG -->
+                                <div class="memorag-testing">
+                                    <h4><i class="fas fa-search"></i> MemoRAG testing</h4>
+                                    
+                                    <div class="setting-group">
+                                        <label for="memoragTestQuery">Test query:</label>
+                                        <input type="text" id="memoragTestQuery" placeholder="Enter a query to test MemoRAG" class="text-input">
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="memoragTestTopK">Number of results:</label>
+                                        <input type="number" id="memoragTestTopK" min="1" max="10" value="5" class="number-input">
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="memoragContextLength">Context length (chars):</label>
+                                        <input type="number" id="memoragContextLength" min="50" max="2000" value="200" class="number-input">
+                                        <small>Number of characters shown in search results</small>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <button id="testMemoRagBtn" class="btn btn-primary">
+                                            <i class="fas fa-play"></i> Test MemoRAG
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="memoragTestResults" class="memorag-test-results" style="display: none;">
+                                        <h5>Test results:</h5>
+                                        <div id="memoragTestOutput" class="test-output"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка Пациенты -->
+                    <div id="patientsTab" class="tab-panel">
+                        <div class="patients-container">
+                            <h3><i class="fas fa-user-md"></i> Patient management</h3>
+                            
+                            <!-- Статистика пациентов -->
+                            <div class="patients-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total patients:</span>
+                                    <span class="stat-value" id="patientsCount">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total documents:</span>
+                                    <span class="stat-value" id="documentsCount">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">DB status:</span>
+                                    <span class="stat-value" id="patientsDbStatus">Not initialized</span>
+                                </div>
+                            </div>
+
+                            <!-- Выгрузка и импорт базы данных -->
+                            <div class="patients-export-section" style="margin-top: 20px; padding: 15px; background: var(--card-bg, #f5f5f5); border-radius: 8px;">
+                                <h4><i class="fas fa-database"></i> Database Export/Import</h4>
+                                
+                                <!-- Экспорт -->
+                                <div class="setting-group" style="margin-bottom: 20px;">
+                                    <h5 style="margin-bottom: 10px;"><i class="fas fa-download"></i> Export Database</h5>
+                                    <label>Export format:</label>
+                                    <select id="exportDbFormat" class="select-input" style="margin-bottom: 10px;">
+                                        <option value="sqlite">SQLite (.db) - Full database copy</option>
+                                        <option value="sql">SQL Dump (.sql) - SQL script</option>
+                                        <option value="json">JSON (.json) - Structured data</option>
+                                        <option value="zip">ZIP Archive - All formats</option>
+                                    </select>
+                                    <button id="exportDatabaseBtn" class="btn btn-primary">
+                                        <i class="fas fa-download"></i> Export Database
+                                    </button>
+                                    <small style="display: block; margin-top: 8px; color: #666;">
+                                        <i class="fas fa-info-circle"></i>
+                                        Export the entire patients database in the selected format.<br>
+                                        <strong>Файл будет сохранен в папку "Загрузки" (Downloads) вашего браузера.</strong>
+                                    </small>
+                                </div>
+                                
+                                <!-- Импорт -->
+                                <div class="setting-group" style="border-top: 1px solid #ddd; padding-top: 15px;">
+                                    <h5 style="margin-bottom: 10px;"><i class="fas fa-upload"></i> Import Database</h5>
+                                    <label>Import mode:</label>
+                                    <select id="importDbMode" class="select-input" style="margin-bottom: 10px;">
+                                        <option value="merge">Merge - Add to existing data</option>
+                                        <option value="replace">Replace - Replace all data</option>
+                                    </select>
+                                    <input type="file" id="importDatabaseFile" accept=".db,.sql,.json" style="display: none;">
+                                    <button id="importDatabaseBtn" class="btn btn-secondary">
+                                        <i class="fas fa-upload"></i> Select File and Import
+                                    </button>
+                                    <small style="display: block; margin-top: 8px; color: #666;">
+                                        <i class="fas fa-info-circle"></i>
+                                        Import database from SQLite (.db), SQL (.sql) or JSON (.json) file.<br>
+                                        <strong>Merge:</strong> Adds data to existing database.<br>
+                                        <strong>Replace:</strong> Replaces all data (creates backup for SQLite).
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Управление пациентами -->
+                            <div class="patients-management">
+                                <h4><i class="fas fa-plus"></i> Add patient</h4>
+                                
+                                <div class="setting-group">
+                                    <label for="patientName">Patient name:</label>
+                                    <input type="text" id="patientName" placeholder="Enter patient name" class="text-input">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="patientAge">Age:</label>
+                                    <input type="number" id="patientAge" min="0" max="150" placeholder="Age" class="number-input">
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="patientGender">Gender:</label>
+                                    <select id="patientGender" class="select-input">
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="patientNotes">Notes:</label>
+                                    <textarea id="patientNotes" placeholder="Additional information about the patient" class="textarea-input" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <button id="addPatientBtn" class="btn btn-primary">
+                                        <i class="fas fa-user-plus"></i> Add patient
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Управление документами -->
+                            <div class="documents-management">
+                                <h4><i class="fas fa-file-medical"></i> Document management</h4>
+                                
+                                <div class="setting-group">
+                                    <label for="selectedPatient">Select patient:</label>
+                                    <select id="selectedPatient" class="select-input">
+                                        <option value="">Select patient</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="documentType">Document type:</label>
+                                    <select id="documentType" class="select-input">
+                                        <option value="medical_record">Medical record</option>
+                                        <option value="diagnosis">Diagnosis</option>
+                                        <option value="prescription">Prescription</option>
+                                        <option value="lab_result">Lab result</option>
+                                        <option value="scan_result">Scan result</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="documentContent">Document content:</label>
+                                    <textarea id="documentContent" placeholder="Enter document text or use OCR" class="textarea-input" rows="6"></textarea>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div class="button-group">
+                                        <button id="addDocumentBtn" class="btn btn-primary">
+                                            <i class="fas fa-file-plus"></i> Add document
+                                        </button>
+                                        <button id="ocrDocumentBtn" class="btn btn-secondary">
+                                            <i class="fas fa-camera"></i> OCR extraction
+                                        </button>
+                                        <button id="visionLlmBtn" class="btn btn-secondary">
+                                            <i class="fas fa-eye"></i> Vision-LLM
+                                        </button>
+                                    </div>
+                                    <div id="visionLlmProgress" class="info-message" style="display: none; margin-top: 10px;">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span id="visionLlmProgressText">Vision-LLM: preparing...</span>
+                                    </div>
+                                    <div class="info-message" style="margin-top: 10px;">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>Supported formats:</strong> PDF (processed as image via OCR), TXT, DOCX, JPG, JPEG, PNG, GIF.
+                                            <br><strong>PDF files</strong> are automatically converted to images and recognized via OCR on import.
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Скрытый input для выбора файлов -->
+                                <input type="file" id="documentFileInput" style="display: none;" multiple accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif">
+                                <input type="file" id="visionLlmFileInput" style="display: none;" accept=".pdf">
+                            </div>
+
+                            <!-- Пакетный запрос к LLM по всем пациентам -->
+                            <div class="batch-query-section">
+                                <h4><i class="fas fa-robot"></i> Batch LLM query</h4>
+
+                                <div class="setting-group">
+                                    <label for="batchPatientQuery">Query for all patients:</label>
+                                    <textarea id="batchPatientQuery" class="textarea-input" rows="4" placeholder="Enter a single query that will be sent for each patient"></textarea>
+                                    <small>Uses current model, system prompt (if enabled), patient data and MemoRAG context.</small>
+                                </div>
+
+                                <div class="setting-group">
+                                    <label>
+                                        <input type="checkbox" id="batchUseMemoRag" checked>
+                                        Use MemoRAG
+                                    </label>
+                                </div>
+
+                                <div class="setting-group">
+                                    <label for="batchMemoRagTopK">MemoRAG top_k:</label>
+                                    <input type="number" id="batchMemoRagTopK" class="number-input" min="1" max="50" value="5">
+                                </div>
+
+                                <div class="setting-group">
+                                    <label for="batchMemoRagContextLength">MemoRAG context length:</label>
+                                    <input type="number" id="batchMemoRagContextLength" class="number-input" min="50" max="2000" value="200">
+                                </div>
+
+                                <div class="setting-group">
+                                    <div class="button-group">
+                                        <button id="runBatchQueryBtn" class="btn btn-success">
+                                            <i class="fas fa-play"></i> Run for all patients
+                                        </button>
+                                        <button id="downloadBatchResultsBtn" class="btn btn-secondary" disabled>
+                                            <i class="fas fa-download"></i> Download XLSX
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="batchQueryProgress" class="info-message" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span id="batchQueryProgressText">Preparing batch query...</span>
+                                </div>
+                                <div id="batchQuerySummary" class="info-message" style="display: none;"></div>
+                            </div>
+
+                            <!-- Список пациентов -->
+                            <div class="patients-list">
+                                <h4><i class="fas fa-list"></i> Patient list</h4>
+                                <div id="patientsList" class="patients-list-container">
+                                    <!-- Patient list is loaded dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Управление базой данных -->
+                            <div class="database-management">
+                                <h4><i class="fas fa-database"></i> Database management</h4>
+                                
+                                <div class="setting-group">
+                                    <div class="button-group">
+                                        <button id="refreshPatientsBtn" class="btn btn-secondary">
+                                            <i class="fas fa-sync"></i> Refresh list
+                                        </button>
+                                        <button id="clearPatientsDbBtn" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Clear patients DB
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-message">
+                                    <small>
+                                        <i class="fas fa-info-circle"></i>
+                                        Clearing the database removes all patients and documents. This action is irreversible.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Массовый импорт пациентов -->
+                            <div class="mass-import-section">
+                                <h4><i class="fas fa-upload"></i> Bulk patient import</h4>
+                                
+                                <div class="setting-group">
+                                    <label for="massImportFolder">Select a folder with patients:</label>
+                                    <div class="folder-input-group">
+                                        <input type="file" id="massImportFolder" webkitdirectory directory multiple style="display: none;" accept=".pdf,.docx,.jpg,.jpeg,.png">
+                                        <button id="selectFolderBtn" class="btn btn-primary">
+                                            <i class="fas fa-folder-open"></i> Select folder
+                                        </button>
+                                        <span id="selectedFolderPath" class="folder-path">No folder selected</span>
+                                    </div>
+                                    <div class="info-message">
+                                        <small>
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <strong>Important:</strong> Select a folder that contains patient files.
+                                            <br><strong>Supported formats:</strong> PDF (images), DOCX, JPG, JPEG, PNG.
+                                            <br><strong>Recommended browsers:</strong> Chrome, Edge, Opera (best folder selection support).
+                                            <br>All files in the selected folder will be imported as documents for one patient.
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <label for="massImportPatientInfo">Additional patient info:</label>
+                                    <textarea id="massImportPatientInfo" placeholder="Enter info to add to all imported patients (e.g., department, doctor, admission date)" class="textarea-input" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="setting-group">
+                                    <div class="button-group">
+                                        <button id="startMassImportBtn" class="btn btn-success" disabled>
+                                            <i class="fas fa-play"></i> Start import
+                                        </button>
+                                        <button id="stopMassImportBtn" class="btn btn-danger" disabled>
+                                            <i class="fas fa-stop"></i> Stop
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Прогресс импорта -->
+                                <div id="massImportProgress" class="import-progress" style="display: none;">
+                                    <div class="progress-header">
+                                        <span id="progressStatus">Preparing import...</span>
+                                        <span id="progressCounter">0 / 0</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="progressBarFill" class="progress-fill"></div>
+                                    </div>
+                                    <div id="progressDetails" class="progress-details">
+                                        <!-- Progress details will be added dynamically -->
+                                    </div>
+                                </div>
+                                
+                                <div class="info-message">
+                                    <small>
+                                        <i class="fas fa-info-circle"></i>
+                                        <strong>Folder structure:</strong> each subfolder = one patient (folder name = patient name).
+                                        Inside each patient folder: PDF files (OCR) and Word documents (.doc/.docx).
+                                        <br><strong>Example:</strong> Patients/John_Doe/record.docx, Patients/Jane_Smith/tests.pdf
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка API -->
+                    <div id="apiTab" class="tab-panel">
+                        <div class="api-container">
+                            <h3>OpenAI-compatible API</h3>
+                            <div class="api-info">
+                                <p><strong>Base URL:</strong> <code>http://localhost:8000</code></p>
+                                <p><strong>Chat endpoint:</strong> <code>POST /v1/chat/completions</code></p>
+                            </div>
+                            
+                            <div class="api-example">
+                                <h4>Usage example:</h4>
+                                <pre><code>curl -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "distilgpt2",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ],
+    "max_tokens": 100,
+    "temperature": 0.7
+  }'</code></pre>
+                            </div>
+
+                            <div class="api-test">
+                                <h4>API test:</h4>
+                                <textarea id="apiTestInput" placeholder='{"model": "distilgpt2", "messages": [{"role": "user", "content": "Hello!"}]}' rows="5"></textarea>
+                                <button id="testApiBtn" class="btn btn-secondary">Test API</button>
+                                <div id="apiTestResult" class="api-result"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Библиотеки для обработки файлов -->
+    <!-- PDF.js для обработки PDF файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Mammoth.js для обработки DOCX файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- SheetJS для экспорта в XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Основной скрипт приложения -->
+    <script src="/static/script.js"></script>
+    <!-- Модуль OCR (выделен из основного скрипта) -->
+    <script src="/static/js/ocr.js"></script>
+    <script src="/static/js/patients.js"></script>
+</body>
+</html>
