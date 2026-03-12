@@ -71,7 +71,7 @@ class OllamaEmbeddings:
             # Always in offline mode
             self.offline_mode = True
             
-            logger.info(f"Статус подключения: Ollama локально={ollama_available}, офлайн режим=True")
+            logger.info(f"Connection status: Ollama local={ollama_available}, offline mode=True")
         
         return {
             "ollama_local_available": self.is_ollama_local_available(),
@@ -112,17 +112,17 @@ class OllamaEmbeddings:
                             })
                     
                     self.available_models = embedding_models
-                    logger.info(f"Найдено {len(embedding_models)} моделей для эмбеддингов")
+                    logger.info(f"Found {len(embedding_models)} embedding models")
                     return embedding_models
                 else:
-                    logger.error(f"Ошибка получения моделей: {response.status_code}")
+                    logger.error(f"Error getting models: {response.status_code}")
                     return []
                     
         except httpx.ConnectError:
-            logger.warning("Не удается подключиться к Ollama серверу")
+            logger.warning("Cannot connect to Ollama server")
             return []
         except Exception as e:
-            logger.error(f"Ошибка получения моделей: {e}")
+            logger.error(f"Error getting models: {e}")
             return []
     
     async def get_embeddings(self, text: str, model: Optional[str] = None) -> Optional[List[float]]:
@@ -155,20 +155,20 @@ class OllamaEmbeddings:
                     if embedding:
                         self.current_embedding_model = embedding_model
                         self.embedding_dimension = len(embedding)
-                        logger.info(f"Эмбеддинг сгенерирован: размерность={len(embedding)}")
+                        logger.info(f"Embedding generated: dimension={len(embedding)}")
                         return embedding
                     else:
-                        logger.error("Пустой эмбеддинг в ответе")
+                        logger.error("Empty embedding in response")
                         return None
                 else:
-                    logger.error(f"Ошибка генерации эмбеддингов: {response.status_code}")
+                    logger.error(f"Embedding generation error: {response.status_code}")
                     return None
                     
         except httpx.ConnectError:
-            logger.warning("Не удается подключиться к Ollama серверу")
+            logger.warning("Cannot connect to Ollama server")
             return None
         except Exception as e:
-            logger.error(f"Ошибка генерации эмбеддингов: {e}")
+            logger.error(f"Embedding generation error: {e}")
             return None
     
     async def test_connection(self) -> Dict[str, Any]:
@@ -208,7 +208,7 @@ class OllamaEmbeddings:
                         
                         return {
                             "status": "success",
-                            "message": "Подключение к Ollama работает",
+                            "message": "Connection to Ollama is working",
                             "models_count": len(models),
                             "embedding_dimension": len(embedding),
                             "offline_mode": True,
@@ -217,14 +217,14 @@ class OllamaEmbeddings:
                     else:
                         return {
                             "status": "error",
-                            "message": f"Ошибка генерации эмбеддингов: {embed_response.status_code}",
+                            "message": f"Embedding generation error: {embed_response.status_code}",
                             "offline_mode": True,
                             "connection_info": connection_info
                         }
                 else:
                     return {
                         "status": "error",
-                        "message": f"Ошибка подключения: {response.status_code}",
+                        "message": f"Connection error: {response.status_code}",
                         "offline_mode": True,
                         "connection_info": connection_info
                     }
@@ -232,14 +232,14 @@ class OllamaEmbeddings:
         except httpx.ConnectError:
             return {
                 "status": "error",
-                "message": "Не удается подключиться к Ollama серверу",
+                "message": "Cannot connect to Ollama server",
                 "offline_mode": True,
                 "connection_info": connection_info
             }
         except Exception as e:
             return {
                 "status": "error",
-                "message": f"Ошибка тестирования: {str(e)}",
+                "message": f"Test error: {str(e)}",
                 "offline_mode": True,
                 "connection_info": connection_info
             }

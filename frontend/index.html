@@ -6,11 +6,11 @@
     <title>AI Assistant</title>
     <link rel="stylesheet" href="/static/styles.css">
     <!-- <link rel="stylesheet" href="patients_styles.css"> -->
-    <!-- Font Awesome (иконки) -->
+    <!-- Font Awesome (icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <!-- Локальные ресурсы вместо CDN -->
+    <!-- Local resources instead of CDN -->
     <style>
-        /* Встроенные стили Font Awesome для основных иконок */
+        /* Inline Font Awesome styles for main icons */
         .fas, .far, .fab {
             font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands";
             font-weight: 900;
@@ -77,10 +77,10 @@
         .fa-circle-dot:before { content: "\f192"; }
         .fa-circle-half-stroke:before { content: "\f042"; }
     </style>
-    <!-- Реальная библиотека XLSX (SheetJS) для экспорта в .xlsx -->
+    <!-- XLSX (SheetJS) library for .xlsx export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
     <style>
-        /* Применяем светлую тему сразу при загрузке, до выполнения JavaScript */
+        /* Apply light theme on load, before JavaScript runs */
         body {
             background-color: #ffffff !important;
             color: #333333 !important;
@@ -89,7 +89,7 @@
 </head>
 <body class="light-theme">
     <div class="app-container">
-        <!-- Верхняя панель -->
+        <!-- Top bar -->
         <header class="top-bar">
             <div class="top-bar-left">
                 <div class="logo">
@@ -120,9 +120,9 @@
             </div>
         </header>
 
-        <!-- Основной контейнер -->
+        <!-- Main container -->
         <div class="main-container">
-            <!-- Боковая панель -->
+            <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-section">
                     <h3><i class="fas fa-cog"></i> Settings</h3>
@@ -150,41 +150,40 @@
                     <h3><i class="fas fa-comment-dots"></i> System Prompt</h3>
                     <div class="setting-group">
                         <label for="systemPrompt">Prompt:</label>
-                        <textarea id="systemPrompt" rows="6" placeholder="Enter a system prompt...">Ты профессиональный медицинский AI-ассистент со специализацией в оториноларингологии (ЛОР) на русском языке.
+                        <textarea id="systemPrompt" rows="6" placeholder="Enter a system prompt...">You are a professional medical AI assistant specializing in otorhinolaryngology (ENT).
 
-ТВОЯ РОЛЬ:
-- Предоставлять медицинскую информацию и консультации по вопросам ЛОР-заболеваний
-- Анализировать симптомы и давать рекомендации
-- Помогать в интерпретации медицинских данных и документов
-- Отвечать на вопросы о диагностике и лечении исключительно на русском языке.
+YOUR ROLE:
+- Provide medical information and consultations on ENT conditions
+- Analyze symptoms and give recommendations
+- Help interpret medical data and documents
+- Answer questions on diagnosis and treatment in a clear, professional way.
 
-ПРАВИЛА ПРИОРИТЕТОВ:
-1. Данные пациента (если предоставлены) → высший приоритет
-2. Фрагменты базы знаний из MemoRAG (EPOS 2020, AAO-HNS, Минздрав РФ, ВОЗ и др.) → средний приоритет  
-   - Используй их напрямую и указывай источник
-   - Если в MemoRAG есть противоречия — отмечай это и предлагай варианты
-3. Общие медицинские знания → низший приоритет  
-Если информации нет — укажи честно, не придумывай.
+PRIORITY RULES:
+1. Patient data (if provided) → highest priority
+2. Knowledge base fragments from MemoRAG (EPOS 2020, AAO-HNS, guidelines, etc.) → medium priority
+   - Use them directly and cite the source
+   - If MemoRAG has conflicting information, note it and suggest options
+3. General medical knowledge → lowest priority
+If information is missing, say so clearly; do not invent.
 
-ОСОБЕННОСТИ РАБОТЫ С MEMORAG:
-- MemoRAG предоставляет фрагменты документов (гайдлайны, статьи, учебники) в отдельном блоке
-- Всегда используй эти фрагменты для подтверждения своих выводов
-- Явно указывай, что информация взята из документа MemoRAG («Согласно EPOS 2020…»)
-- Не изменяй формулировки рекомендаций из базы знаний без необходимости
+WORKING WITH MEMORAG:
+- MemoRAG provides document fragments (guidelines, articles, textbooks) in a separate block
+- Always use these fragments to support your conclusions
+- Explicitly state when information is from MemoRAG (e.g. "According to EPOS 2020…")
+- Do not change the wording of recommendations from the knowledge base without need
 
-ПРАВИЛА ОБЩЕНИЯ:
-- Отвечай только на русском языке
-- Будь профессиональным, но понятным
-- Всегда подчеркивай, что это не замена врачебной консультации
-- При серьёзных симптомах обязательно рекомендуй обратиться к врачу
-- Используй медицинскую терминологию корректно
-- Будь кратким, но информативным
+COMMUNICATION:
+- Be professional but clear
+- Always state that this is not a substitute for medical consultation
+- For serious symptoms, recommend seeing a doctor
+- Use medical terminology correctly
+- Be concise but informative
 
-ФОРМАТ ОТВЕТА:
-1.  Краткое заключение (10 предложений на русском языке)
-2.  Подробное объяснение
-3.  Указание источников (данные пациента, MemoRAG, общие знания)
-4. Рекомендации по дальнейшим действиям</textarea>
+RESPONSE FORMAT:
+1. Brief summary
+2. Detailed explanation
+3. Sources (patient data, MemoRAG, general knowledge)
+4. Recommendations for next steps</textarea>
                     </div>
                     <div class="setting-group">
                         <button id="saveSystemPromptBtn" class="btn btn-secondary">
@@ -362,9 +361,9 @@
                                 <div class="setting-group">
                                     <label for="patientAnalysisPercent">Test percentage (%):</label>
                                     <input type="number" id="patientAnalysisPercent" class="input-input" min="1" max="100" value="100" style="width: 100px;">
-                                    <small>Процент пациентов из базы данных для тестирования (1-100%)</small>
+                                    <small>Percentage of patients from database for testing (1-100%)</small>
                                     <div id="patientAnalysisCountInfo" style="margin-top: 5px; font-size: 12px; color: #888;">
-                                        Будет обработано: <span id="patientAnalysisCountValue">все</span> пациентов
+                                        To be processed: <span id="patientAnalysisCountValue">all</span> patients
                                     </div>
                                 </div>
                                 <div class="setting-group">
@@ -874,7 +873,7 @@
                                     <small style="display: block; margin-top: 8px; color: #666;">
                                         <i class="fas fa-info-circle"></i>
                                         Export the entire patients database in the selected format.<br>
-                                        <strong>Файл будет сохранен в папку "Загрузки" (Downloads) вашего браузера.</strong>
+                                        <strong>File will be saved to your browser's Downloads folder.</strong>
                                     </small>
                                 </div>
                                 

@@ -165,17 +165,17 @@ class OllamaEmbeddings:
     
     async def get_embeddings(self, texts, model: Optional[str] = None, batch_size: int = 10, progress_callback=None) -> Optional[List[List[float]]]:
         """
-        Получение эмбеддингов для текста или списка текстов с батчевой обработкой
+        Get embeddings for text or list of texts with batch processing.
         
         Args:
-            texts: Может быть строкой (один текст) или списком строк
-            model: Имя модели для эмбеддингов (опционально)
-            batch_size: Размер батча для обработки списка текстов (по умолчанию 10)
-            progress_callback: Callback функция для отслеживания прогресса (опционально)
+            texts: Single string or list of strings
+            model: Embedding model name (optional)
+            batch_size: Batch size for list processing (default 10)
+            progress_callback: Callback for progress (optional)
         
         Returns:
-            Для одного текста: List[float] - один эмбеддинг
-            Для списка текстов: List[List[float]] - список эмбеддингов
+            Single text: List[float] - one embedding
+            List of texts: List[List[float]] - list of embeddings
         """
         try:
             # Check connection status
@@ -336,7 +336,7 @@ class OllamaEmbeddings:
                         
                         return {
                             "status": "success",
-                            "message": "Подключение к Ollama работает",
+                            "message": "Connection to Ollama is working",
                             "models_count": len(models),
                             "embedding_dimension": len(embedding),
                             "offline_mode": True,
@@ -345,14 +345,14 @@ class OllamaEmbeddings:
                     else:
                         return {
                             "status": "error",
-                            "message": f"Ошибка генерации эмбеддингов: {embed_response.status_code}",
+                            "message": f"Embedding generation error: {embed_response.status_code}",
                             "offline_mode": True,
                             "connection_info": connection_info
                         }
                 else:
                     return {
                         "status": "error",
-                        "message": f"Ошибка подключения: {response.status_code}",
+                        "message": f"Connection error: {response.status_code}",
                         "offline_mode": True,
                         "connection_info": connection_info
                     }
@@ -360,14 +360,14 @@ class OllamaEmbeddings:
         except httpx.ConnectError:
             return {
                 "status": "error",
-                "message": "Не удается подключиться к Ollama серверу",
+                "message": "Cannot connect to Ollama server",
                 "offline_mode": True,
                 "connection_info": connection_info
             }
         except Exception as e:
             return {
                 "status": "error",
-                "message": f"Ошибка тестирования: {str(e)}",
+                "message": f"Test error: {str(e)}",
                 "offline_mode": True,
                 "connection_info": connection_info
             }

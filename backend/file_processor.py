@@ -77,7 +77,7 @@ class FileProcessor:
             ext = file_path.suffix.lower()
             
             if ext not in self.supported_formats:
-                raise ValueError(f"Неподдерживаемый формат файла: {ext}")
+                raise ValueError(f"Unsupported file format: {ext}")
             
             # Determine MIME type if available
             mime_type = "unknown"
@@ -124,21 +124,21 @@ class FileProcessor:
     async def _process_pdf(self, file_path: str) -> str:
         """Process PDF file"""
         if not PDF_AVAILABLE:
-            raise ImportError("PyPDF2 не установлен. Установите: pip install PyPDF2")
+            raise ImportError("PyPDF2 is not installed. Install with: pip install PyPDF2")
         
         text_content = ""
         file_path_obj = Path(file_path)
         
         # Check file existence
         if not file_path_obj.exists():
-            raise FileNotFoundError(f"Файл не найден: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
         
         # Check file size
         file_size = file_path_obj.stat().st_size
         logger.info(f"Processing PDF: {file_path}, size: {file_size} bytes")
         
         if file_size == 0:
-            raise ValueError("PDF файл пуст (размер 0 байт)")
+            raise ValueError("PDF file is empty (0 bytes)")
         
         try:
             with open(file_path, 'rb') as file:
@@ -146,7 +146,7 @@ class FileProcessor:
                 first_bytes = file.read(4)
                 file.seek(0)
                 if not first_bytes.startswith(b'%PDF'):
-                    raise ValueError(f"Файл не является корректным PDF (не найден заголовок %PDF). Первые байты: {first_bytes}")
+                    raise ValueError(f"File is not a valid PDF (missing %PDF header). First bytes: {first_bytes}")
                 
                 logger.info(f"PDF header is correct, starting reading...")
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -154,7 +154,7 @@ class FileProcessor:
                 logger.info(f"PDF reader created, pages: {len(pdf_reader.pages)}")
                 
                 if len(pdf_reader.pages) == 0:
-                    raise ValueError("PDF файл не содержит страниц или поврежден")
+                    raise ValueError("PDF file has no pages or is corrupted")
                 
                 pages_with_text = 0
                 for page_num in range(len(pdf_reader.pages)):
@@ -174,11 +174,11 @@ class FileProcessor:
                 logger.info(f"Extracted text: {len(text_content)} characters from {pages_with_text} pages out of {len(pdf_reader.pages)}")
                 
                 if not text_content.strip():
-                    raise ValueError("Не удалось извлечь текст из PDF. Возможно, это сканированный документ (изображения). Используйте OCR или конвертируйте PDF в изображения.")
+                    raise ValueError("Could not extract text from PDF. It may be a scanned document (images). Use OCR or convert PDF to images.")
                 
                 return text_content.strip()
         except PyPDF2.errors.PdfReadError as e:
-            error_msg = f"Ошибка чтения PDF файла: {str(e)}. Файл может быть поврежден, зашифрован или иметь несовместимый формат."
+            error_msg = f"Error reading PDF file: {str(e)}. File may be corrupted, encrypted, or in an incompatible format."
             logger.error(error_msg)
             raise ValueError(error_msg)
         except ValueError as e:
@@ -186,7 +186,7 @@ class FileProcessor:
             logger.error(f"ValueError when processing PDF: {e}")
             raise
         except Exception as e:
-            error_msg = f"Неожиданная ошибка обработки PDF: {type(e).__name__}: {str(e)}"
+            error_msg = f"Unexpected error processing PDF: {type(e).__name__}: {str(e)}"
             logger.error(f"Error processing PDF {file_path}: {error_msg}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
@@ -202,7 +202,7 @@ class FileProcessor:
     async def _process_docx(self, file_path: str) -> str:
         """Process DOC/DOCX file"""
         if not DOCX_AVAILABLE:
-            raise ImportError("python-docx не установлен")
+            raise ImportError("python-docx is not installed")
         
         doc = Document(file_path)
         text_content = ""
@@ -267,7 +267,7 @@ class FileProcessor:
         current_length = 0
         
         for word in words:
-            word_length = len(word) + 1  # +1 для пробела
+            word_length = len(word) + 1  # +1 for space
             
             # If adding word would exceed chunk size
             if current_length + word_length > chunk_size and current_chunk:
@@ -301,7 +301,7 @@ class FileProcessor:
             chunk_text = " ".join(current_chunk).strip()
             chunks.append(chunk_text)
             if max_chunks and len(chunks) >= max_chunks:
-                logger.warning(f"Достигнут лимит чанков ({max_chunks}). Остаток текста пропущен.")
+                logger.warning(f"Chunk limit reached ({max_chunks}). Remaining text skipped.")
                 return chunks
         
         # Filter too short chunks (minimum 20 characters)
@@ -334,7 +334,7 @@ class FileProcessor:
         try:
             path = Path(file_path)
             if not path.exists():
-                return {"status": "error", "error": "Файл не найден"}
+                return {"status": "error", "error": "File not found"}
             
             stat = path.stat()
             

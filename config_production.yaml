@@ -1,4 +1,4 @@
-# Пример конфигурации для продакшена
+# Example configuration for production
 # config_production.yaml
 
 ollama:
@@ -25,7 +25,7 @@ database:
   port: 5432
   database: "lm_studio_production"
   username: "lm_studio_user"
-  password: "${DB_PASSWORD}"  # Переменная окружения
+  password: "${DB_PASSWORD}"  # Environment variable
   connection_pool_size: 20
   connection_timeout: 60
   enable_ssl: true

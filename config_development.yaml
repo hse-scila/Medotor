@@ -1,4 +1,4 @@
-# Пример конфигурации для разработки
+# Example configuration for development
 # config_development.yaml
 
 ollama:

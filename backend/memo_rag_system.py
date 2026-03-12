@@ -149,7 +149,7 @@ class ClueGenerator:
         clues.append(main_clue)
         
         # Additional hints based on memory
-        for entry in memory_context[:3]:  # Топ 3 записи из памяти
+        for entry in memory_context[:3]:  # Top 3 memory entries
             if entry.memory_type == "concept":
                 concept_clue = Clue(
                     query=f"{entry.content} {user_query}",
@@ -161,7 +161,7 @@ class ClueGenerator:
             
             elif entry.memory_type == "relationship":
                 rel_clue = Clue(
-                    query=f"связь между {entry.content} и {user_query}",
+                    query=f"relationship between {entry.content} and {user_query}",
                     context_hints=[entry.content],
                     expected_doc_types=["comparison", "analysis"],
                     confidence=0.5
@@ -174,8 +174,8 @@ class ClueGenerator:
         """Extract context hints from memory."""
         hints = []
         for entry in memory_context:
-            hints.extend(entry.keywords[:3])  # Топ 3 ключевых слова
-        return list(set(hints))  # Убираем дубликаты
+            hints.extend(entry.keywords[:3])  # Top 3 keywords
+        return list(set(hints))  # Remove duplicates
 
 class MemoRAGSystem:
     """Main MemoRAG system."""
@@ -185,7 +185,7 @@ class MemoRAGSystem:
         self.global_memory = GlobalMemory(max_entries=memory_size)
         self.clue_generator = ClueGenerator(self.global_memory)
         self.memory_file = Path("data/rag/memo_memory.pkl")
-        self.context_length = context_length  # Размер контекста для отображения
+        self.context_length = context_length  # Context length for display
         
         # Load existing memory
         self._load_memory()
@@ -241,7 +241,7 @@ class MemoRAGSystem:
                 
                 # Add to memory (save full text)
                 self.global_memory.add_entry(
-                    content=doc,  # Сохраняем полный текст
+                    content=doc,  # Save full text
                     importance_score=importance,
                     keywords=keywords,
                     source_doc=f"doc_{i}",
@@ -253,7 +253,7 @@ class MemoRAGSystem:
             
             return {
                 "status": "success",
-                "message": f"Добавлено {len(documents)} документов в MemoRAG",
+                "message": f"Added {len(documents)} documents to MemoRAG",
                 "documents_count": len(documents),
                 "memory_entries": len(self.global_memory.memory_entries)
             }
@@ -261,7 +261,7 @@ class MemoRAGSystem:
             logger.error(f"Error adding documents to MemoRAG: {e}")
             return {
                 "status": "error",
-                "message": f"Ошибка добавления документов: {str(e)}"
+                "message": f"Error adding documents: {str(e)}"
             }
     
     def _extract_keywords(self, text: str) -> List[str]:
@@ -281,10 +281,10 @@ class MemoRAGSystem:
     def _calculate_importance(self, text: str) -> float:
         """Calculate document importance."""
         # Simple heuristic - can be replaced with more complex model
-        importance = 0.5  # Базовая важность
+        importance = 0.5  # Base importance
         
         # Increase importance for medical terms
-        medical_terms = ['лечение', 'диагностика', 'симптомы', 'заболевание', 'терапия', 'процедура']
+        medical_terms = ['treatment', 'diagnosis', 'symptoms', 'disease', 'therapy', 'procedure']
         for term in medical_terms:
             if term in text.lower():
                 importance += 0.1
@@ -293,17 +293,17 @@ class MemoRAGSystem:
         if len(text) > 500:
             importance += 0.2
         
-        return min(importance, 1.0)  # Ограничиваем максимумом 1.0
+        return min(importance, 1.0)  # Cap at 1.0
     
     def _classify_memory_type(self, text: str) -> str:
         """Classify memory type."""
         text_lower = text.lower()
         
-        if any(word in text_lower for word in ['определение', 'это', 'означает']):
+        if any(word in text_lower for word in ['definition', 'is', 'means', 'определение', 'это', 'означает']):
             return "concept"
-        elif any(word in text_lower for word in ['связь', 'сравнение', 'различие']):
+        elif any(word in text_lower for word in ['relationship', 'comparison', 'difference', 'связь', 'сравнение', 'различие']):
             return "relationship"
-        elif any(word in text_lower for word in ['резюме', 'вывод', 'заключение']):
+        elif any(word in text_lower for word in ['summary', 'conclusion', 'резюме', 'вывод', 'заключение']):
             return "summary"
         else:
             return "fact"
@@ -349,20 +349,20 @@ class MemoRAGSystem:
             if 'text' in result and len(result['text']) > self.context_length:
                 original_length = len(result['text'])
                 result['text'] = result['text'][:self.context_length] + "..."
-                print(f"DEBUG: Обрезан результат с {original_length} до {self.context_length} символов")
+                print(f"DEBUG: Truncated result from {original_length} to {self.context_length} chars")
         
         # 6. Apply context size to memory context
         memory_context = []
         for entry in memory_results:
             content = entry.content
-            print(f"DEBUG: Оригинальный контент памяти: {len(content)} символов")
-            print(f"DEBUG: Первые 200 символов: {content[:200]}...")
+            print(f"DEBUG: Original memory content: {len(content)} chars")
+            print(f"DEBUG: First 200 chars: {content[:200]}...")
             
             if len(content) > self.context_length:
                 content = content[:self.context_length] + "..."
-                print(f"DEBUG: Обрезан до {self.context_length} символов")
+                print(f"DEBUG: Truncated to {self.context_length} chars")
             else:
-                print(f"DEBUG: Контент уже короткий ({len(content)} символов)")
+                print(f"DEBUG: Content already short ({len(content)} chars)")
             
             memory_context.append(content)
         
@@ -416,7 +416,7 @@ class MemoRAGSystem:
     async def chat_with_memory(self, messages: List[Dict], use_memory: bool = True) -> Dict[str, Any]:
         """Chat using MemoRAG."""
         if not messages:
-            return {'response': 'Нет сообщений для обработки'}
+            return {'response': 'No messages to process'}
         
         user_message = messages[-1]['content']
         
@@ -429,21 +429,21 @@ class MemoRAGSystem:
             
             # Add memory context
             if search_results['memory_context']:
-                context_parts.append("Контекст из памяти:")
+                context_parts.append("Context from memory:")
                 for ctx in search_results['memory_context'][:3]:
                     # Memory context already truncated in search_with_memory
                     context_parts.append(f"- {ctx}")
             
             # Add found documents
             if search_results['results']:
-                context_parts.append("\nРелевантные документы:")
+                context_parts.append("\nRelevant documents:")
                 for result in search_results['results']:
                     # Results already truncated in search_with_memory
                     context_parts.append(f"- {result['text']}")
             
             # Add information about hints
             if search_results['clues_used']:
-                context_parts.append(f"\nИспользованные подсказки: {', '.join(search_results['clues_used'][:3])}")
+                context_parts.append(f"\nClues used: {', '.join(search_results['clues_used'][:3])}")
             
             context = "\n".join(context_parts)
             
@@ -453,7 +453,7 @@ class MemoRAGSystem:
             
             # Use base RAG system for answer generation
             # For now return simple answer, can integrate with model
-            response = f"Ответ на основе MemoRAG с контекстом из {len(search_results['memory_context'])} записей памяти и {len(search_results['results'])} документов."
+            response = f"MemoRAG-based answer with context from {len(search_results['memory_context'])} memory entries and {len(search_results['results'])} documents."
             
             return {
                 'response': response,
@@ -464,7 +464,7 @@ class MemoRAGSystem:
             }
         else:
             # Use regular RAG system
-            return {'response': 'Обычный ответ без памяти'}
+            return {'response': 'Regular answer without memory'}
     
     def get_memory_stats(self) -> Dict[str, Any]:
         """Get memory statistics."""
@@ -498,9 +498,9 @@ class MemoRAGSystem:
     def set_context_length(self, length: int) -> None:
         """Set the context length for display."""
         if length < 50:
-            length = 50  # Минимальный размер
+            length = 50  # Minimum size
         elif length > 2000:
-            length = 2000  # Максимальный размер
+            length = 2000  # Maximum size
         
         old_length = self.context_length
         self.context_length = length

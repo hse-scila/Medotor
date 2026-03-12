@@ -413,16 +413,16 @@ def _format_patient_context(patient: Dict[str, Any], documents: List[Dict[str, A
     """Format patient context exactly as in regular chat (frontend)"""
     lines = []
     lines.append("\n" + "=" * 80)
-    lines.append("ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА")
+    lines.append("PATIENT DATA - YOU MUST USE THIS FOR YOUR ANSWER")
     lines.append("=" * 80 + "\n")
-    lines.append("ПАЦИЕНТ:")
-    lines.append(f"  Имя: {patient.get('name')}")
+    lines.append("PATIENT:")
+    lines.append(f"  Name: {patient.get('name')}")
     if patient.get("age"):
-        lines.append(f"  Возраст: {patient.get('age')} лет")
+        lines.append(f"  Age: {patient.get('age')} years")
     if patient.get("gender"):
-        lines.append(f"  Пол: {patient.get('gender')}")
+        lines.append(f"  Gender: {patient.get('gender')}")
     if patient.get("notes"):
-        lines.append(f"  Заметки: {patient.get('notes')}")
+        lines.append(f"  Notes: {patient.get('notes')}")
     if patient.get("created_at"):
         # Format date as in frontend (use ISO format for consistency)
         try:
@@ -430,23 +430,23 @@ def _format_patient_context(patient: Dict[str, Any], documents: List[Dict[str, A
             if isinstance(patient.get("created_at"), str):
                 # Try to parse and format date
                 dt = datetime.fromisoformat(patient.get("created_at").replace('Z', '+00:00'))
-                lines.append(f"  Дата создания: {dt.strftime('%d.%m.%Y')}")
+                lines.append(f"  Created: {dt.strftime('%d.%m.%Y')}")
             else:
-                lines.append(f"  Дата создания: {patient.get('created_at')}")
+                lines.append(f"  Created: {patient.get('created_at')}")
         except:
-            lines.append(f"  Дата создания: {patient.get('created_at')}")
+            lines.append(f"  Created: {patient.get('created_at')}")
     lines.append("")
 
     if documents:
-        lines.append(f"МЕДИЦИНСКИЕ ДОКУМЕНТЫ ({len(documents)} документов):\n")
-        lines.append("ВНИМАНИЕ: В этих документах могут быть данные для оценки показателей!")
-        lines.append("ОБЯЗАТЕЛЬНО ищи в каждом документе:")
-        lines.append("  1. NPS (степень полипов 0-8) - ищи упоминания полипов, оценок полипов, степени выраженности")
-        lines.append("  2. SNOT-22 (0-110) - ищи анкеты SNOT-22, оценки симптомов, баллы")
-        lines.append("  3. Контроль ПРС (EPOS 2020) - ищи диагнозы риносинусит, ПРС, контроль")
-        lines.append("  4. T2-воспаление - ищи эозинофилы (EOS), IgE, FeNO, упоминания астмы, AERD")
-        lines.append("  5. ACT (контроль астмы ≤19/20-24/25) - ищи анкеты ACT, контроль астмы")
-        lines.append("  6. Любые числа, показатели, анализы, обследования\n")
+        lines.append(f"MEDICAL DOCUMENTS ({len(documents)} documents):\n")
+        lines.append("NOTE: These documents may contain data for outcome assessment!")
+        lines.append("MUST look in each document for:")
+        lines.append("  1. NPS (polyp score 0-8) - polyp mentions, polyp scores, severity")
+        lines.append("  2. SNOT-22 (0-110) - SNOT-22 questionnaires, symptom scores")
+        lines.append("  3. CRS control (EPOS 2020) - rhinosinusitis, CRS, control")
+        lines.append("  4. T2 inflammation - eosinophils (EOS), IgE, FeNO, asthma, AERD")
+        lines.append("  5. ACT (asthma control ≤19/20-24/25) - ACT questionnaires")
+        lines.append("  6. Any numbers, measures, lab results, examinations\n")
 
         # Format documents exactly as in frontend (lines 1984-1988)
         for index, doc in enumerate(documents, start=0):
@@ -456,7 +456,7 @@ def _format_patient_context(patient: Dict[str, Any], documents: List[Dict[str, A
             if content and isinstance(content, str):
                 # Check for binary data and clean
                 if _is_binary_data(content):
-                    content_cleaned = "[БИНАРНЫЕ ДАННЫЕ: документ содержит изображения или бинарные данные, пропущен]"
+                    content_cleaned = "[BINARY DATA: document contains images or binary data, skipped]"
                 else:
                     # Normalize line breaks
                     unified = content.replace('\r\n', '\n').replace('\r', '\n')
@@ -469,25 +469,25 @@ def _format_patient_context(patient: Dict[str, Any], documents: List[Dict[str, A
                     # Truncate to reasonable length (100000 characters per document), preserving end
                     if len(content_cleaned) > 100000:
                         removed = len(content_cleaned) - 100000
-                        content_cleaned = f"[... ТЕКСТ ОБРЕЗАН: удалено {removed} символов из начала (было {len(content_cleaned)}, осталось 100000). В начале могли быть повторяющиеся вопросы ...]\n" + content_cleaned[-100000:]
+                        content_cleaned = f"[... TEXT TRUNCATED: removed {removed} chars from start (was {len(content_cleaned)}, kept 100000). Start may have had repeated content ...]\n" + content_cleaned[-100000:]
             else:
                 content_cleaned = ""
             # Frontend uses index + 1 (lines 1986-1987)
-            lines.append(f"\n[ДОКУМЕНТ {index + 1}/{len(documents)}] Тип: {doc.get('document_type')}\n")
-            lines.append(content_cleaned + '\n' if content_cleaned else '[Содержимое документа отсутствует]\n')
+            lines.append(f"\n[DOCUMENT {index + 1}/{len(documents)}] Type: {doc.get('document_type')}\n")
+            lines.append(content_cleaned + '\n' if content_cleaned else '[Document content missing]\n')
 
-        lines.append("ИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ ДОКУМЕНТОВ:")
-        lines.append("1. Прочитай ВСЕ документы выше ОЧЕНЬ ВНИМАТЕЛЬНО")
-        lines.append("2. Найди в документах УПОМИНАНИЯ показателей: NPS, SNOT-22, эозинофилы, IgE, FeNO, астма, ACT")
-        lines.append("3. Найди ЧИСЛА и ПОКАЗАТЕЛИ, которые могут относиться к оценке")
-        lines.append("4. Найди ДИАГНОЗЫ: риносинусит, ПРС, полипы, астма")
-        lines.append("5. Найди РЕЗУЛЬТАТЫ анализов: эозинофилы, лейкоциты, IgE")
-        lines.append("6. Найди АНКЕТЫ: SNOT-22, ACT, NOSE, опросники")
-        lines.append("7. Если нашел данные - используй их ТОЧНО как указано в документе")
-        lines.append("8. Если данных нет - пиши \"нет данных для оценки\"")
-        lines.append("9. НЕ придумывай данные, НЕ используй общие знания - только из документов выше!")
+        lines.append("INSTRUCTIONS FOR USING DOCUMENTS:")
+        lines.append("1. Read ALL documents above VERY CAREFULLY")
+        lines.append("2. Find in documents MENTIONS of: NPS, SNOT-22, eosinophils, IgE, FeNO, asthma, ACT")
+        lines.append("3. Find NUMBERS and MEASURES that may relate to assessment")
+        lines.append("4. Find DIAGNOSES: rhinosinusitis, CRS, polyps, asthma")
+        lines.append("5. Find LAB RESULTS: eosinophils, leukocytes, IgE")
+        lines.append("6. Find QUESTIONNAIRES: SNOT-22, ACT, NOSE")
+        lines.append("7. If you find data - use it EXACTLY as in the document")
+        lines.append("8. If no data - write \"no data for assessment\"")
+        lines.append("9. DO NOT invent data, DO NOT use general knowledge - only from documents above!")
     else:
-        lines.append("ВНИМАНИЕ: У пациента нет загруженных документов.")
+        lines.append("NOTE: Patient has no uploaded documents.")
 
     lines.append("\n" + "=" * 80 + "\n")
     return "\n".join(lines)
@@ -505,45 +505,45 @@ def _format_memorag_context(search_results: Dict[str, Any]) -> str:
 
     # Format EXACTLY as in frontend (lines 1652-1687)
     memoragContext = '=' * 80 + '\n'
-    memoragContext += 'ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ (MemoRAG) - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\n'
+    memoragContext += 'KNOWLEDGE BASE FRAGMENTS (MemoRAG) - YOU MUST USE FOR YOUR ANSWER\n'
     memoragContext += '=' * 80 + '\n\n'
     
     # Add used hints FIRST (most important for understanding search context)
     if clues_used and len(clues_used) > 0:
         memoragContext += '-' * 80 + '\n'
-        memoragContext += f'🔍 ПОДСКАЗКИ MEMORAG ДЛЯ ПОИСКА ({len(clues_used)} подсказок):\n'
+        memoragContext += f'🔍 MEMORAG SEARCH CLUES ({len(clues_used)} clues):\n'
         memoragContext += '-' * 80 + '\n'
-        memoragContext += 'ВАЖНО: Эти подсказки были автоматически сгенерированы MemoRAG для улучшения поиска.\n'
-        memoragContext += 'Они помогают понять, какие ключевые слова и концепции использовались при поиске.\n\n'
+memoragContext += 'IMPORTANT: These clues were auto-generated by MemoRAG to improve search.\n'
+    memoragContext += 'They show which keywords and concepts were used in the search.\n\n'
         for index, clue in enumerate(clues_used, start=1):
             cleaned_clue = _clean_text(str(clue), max_length=500)
-            memoragContext += f'  Подсказка {index}: {cleaned_clue}\n'
+            memoragContext += f'  Clue {index}: {cleaned_clue}\n'
         memoragContext += '\n' + '-' * 80 + '\n\n'
     
     # Add memory context if available (lines 1657-1664)
     if memory_context and len(memory_context) > 0:
         memoragContext += '-' * 80 + '\n'
-        memoragContext += f'💾 КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG ({len(memory_context)} фрагментов):\n'
+        memoragContext += f'💾 MEMORAG MEMORY CONTEXT ({len(memory_context)} fragments):\n'
         memoragContext += '-' * 80 + '\n'
-        memoragContext += 'Это сохраненные в памяти MemoRAG важные факты и концепции из предыдущих запросов.\n\n'
+        memoragContext += 'These are facts and concepts from previous queries stored in MemoRAG memory.\n\n'
         for index, ctx in enumerate(memory_context, start=1):
             # Clean memory context
             cleaned_ctx = _clean_text(str(ctx), max_length=2000)
-            memoragContext += f'  Фрагмент {index}: {cleaned_ctx}\n'
+            memoragContext += f'  Fragment {index}: {cleaned_ctx}\n'
         memoragContext += '\n' + '-' * 80 + '\n\n'
     
     # Add found MemoRAG documents (lines 1667-1674)
     if results and len(results) > 0:
         memoragContext += '-' * 80 + '\n'
-        memoragContext += f'📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ ({len(results)} документов):\n'
+        memoragContext += f'📄 RELEVANT KNOWLEDGE BASE DOCUMENTS ({len(results)} documents):\n'
         memoragContext += '-' * 80 + '\n'
-        memoragContext += 'Это документы, найденные MemoRAG по подсказкам выше.\n\n'
+        memoragContext += 'These are documents found by MemoRAG using the clues above.\n\n'
         for index, result in enumerate(results, start=1):
-            memoragContext += f'[ДОКУМЕНТ {index}/{len(results)}]\n'
+            memoragContext += f'[DOCUMENT {index}/{len(results)}]\n'
             score = result.get("score")
             if score is not None:
                 try:
-                    memoragContext += f'Релевантность: {(float(score) * 100):.1f}%\n'
+                    memoragContext += f'Relevance: {(float(score) * 100):.1f}%\n'
                 except Exception:
                     pass
             text = result.get("document") or result.get("text") or ""
@@ -553,12 +553,12 @@ def _format_memorag_context(search_results: Dict[str, Any]) -> str:
     else:
         # If no documents but there are hints or memory context, report it
         memoragContext += '-' * 80 + '\n'
-        memoragContext += '📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ: не найдено\n'
+        memoragContext += '📄 RELEVANT KNOWLEDGE BASE DOCUMENTS: none found\n'
         memoragContext += '-' * 80 + '\n'
-        memoragContext += 'MemoRAG не нашел релевантных документов в базе знаний для данного запроса.\n\n'
+        memoragContext += 'MemoRAG found no relevant documents in the knowledge base for this query.\n\n'
     
     memoragContext += '=' * 80 + '\n'
-    memoragContext += 'КОНЕЦ ФРАГМЕНТОВ БАЗЫ ЗНАНИЙ (MemoRAG)\n'
+    memoragContext += 'END OF KNOWLEDGE BASE FRAGMENTS (MemoRAG)\n'
     memoragContext += '=' * 80 + '\n\n'
     return memoragContext
 
@@ -577,11 +577,11 @@ def _format_final_user_message(user_query: str, patient: Dict[str, Any], documen
     # finalMessage += `ANSWER THE QUESTION USING PATIENT DATA FROM THE "PATIENT DATA" BLOCK ABOVE!`;
     
     final_message = "\n" + "=" * 80 + "\n"
-    final_message += "ВАЖНО: ВЫШЕ В ЭТОМ ПРОМПТЕ ЕСТЬ БЛОК \"ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\"!\n"
-    final_message += "ТЫ ОБЯЗАН ИСПОЛЬЗОВАТЬ ЭТИ ДАННЫЕ ДЛЯ ОТВЕТА!\n"
+    final_message += "IMPORTANT: ABOVE IN THIS PROMPT THERE IS A BLOCK \"PATIENT DATA - YOU MUST USE FOR YOUR ANSWER\"!\n"
+    final_message += "YOU MUST USE THAT DATA IN YOUR ANSWER!\n"
     final_message += "=" * 80 + "\n\n"
-    final_message += f"ВОПРОС ПОЛЬЗОВАТЕЛЯ:\n{user_query}\n\n"
-    final_message += "ОТВЕТЬ НА ВОПРОС ИСПОЛЬЗУЯ ДАННЫЕ ПАЦИЕНТА ИЗ БЛОКА \"ДАННЫЕ ПАЦИЕНТА\" КОТОРЫЙ НАХОДИТСЯ ВЫШЕ!"
+    final_message += f"USER QUESTION:\n{user_query}\n\n"
+    final_message += "ANSWER THE QUESTION USING THE PATIENT DATA FROM THE \"PATIENT DATA\" BLOCK ABOVE!"
     
     return final_message
 
@@ -864,7 +864,7 @@ async def websocket_progress(websocket: WebSocket):
                 logger.warning(f"WebSocket: error in message processing loop: {inner_error}")
                 # Check if connection is still open
                 try:
-                    await websocket.send_text(json.dumps({"type": "error", "message": "Ошибка обработки"}))
+                    await websocket.send_text(json.dumps({"type": "error", "message": "Processing error"}))
                 except:
                     # Connection closed - exit
                     break
@@ -924,13 +924,13 @@ async def create_chat_completion(request: ChatCompletionRequest):
         
         # Check for patient data (support different formatting variants)
         content_upper = content.upper()
-        if ("ДАННЫЕ ПАЦИЕНТА" in content_upper or 
-            "ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО" in content_upper or
-            "ДОКУМЕНТЫ ПАЦИЕНТА" in content_upper or
-            "МЕДИЦИНСКИЕ ДОКУМЕНТЫ" in content_upper or
-            "<<<ДАННЫЕ ПАЦИЕНТА" in content_upper or
-            "ОСНОВНАЯ ИНФОРМАЦИЯ О ПАЦИЕНТЕ" in content_upper or
-            "ПАЦИЕНТ:" in content_upper and "ДОКУМЕНТ" in content_upper):
+if ("PATIENT DATA" in content_upper or
+            "PATIENT DATA - YOU MUST" in content_upper or
+            "PATIENT DOCUMENTS" in content_upper or
+            "MEDICAL DOCUMENTS" in content_upper or
+            "<<<PATIENT DATA" in content_upper or
+            "PATIENT INFO" in content_upper or
+            "PATIENT:" in content_upper and "DOCUMENT" in content_upper):
             patient_data_present = True
             logger.info(f"✓ Patient data detected in message {idx} (length: {len(content)} characters)")
             # Log preview for verification
@@ -939,13 +939,13 @@ async def create_chat_completion(request: ChatCompletionRequest):
         
         # Check for MemoRAG context
         if ("MEMORAG" in content_upper or
-            "ПОДСКАЗКИ MEMORAG" in content_upper or
-            "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in content_upper or
-            "РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ" in content_upper or
-            "КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG" in content_upper or
-            "🔍 ПОДСКАЗКИ" in content or
-            "💾 КОНТЕКСТ ИЗ ПАМЯТИ" in content or
-            "📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ" in content):
+            "MEMORAG SEARCH CLUES" in content_upper or
+            "KNOWLEDGE BASE FRAGMENTS" in content_upper or
+            "RELEVANT KNOWLEDGE BASE DOCUMENTS" in content_upper or
+            "MEMORAG MEMORY CONTEXT" in content_upper or
+            "🔍" in content and "CLUES" in content_upper or
+            "💾" in content and "MEMORY CONTEXT" in content_upper or
+            "📄" in content and "RELEVANT" in content_upper):
             memorag_data_present = True
             logger.info(f"✅ MemoRAG context detected in message {idx} (length: {len(content)} characters)")
             # Log preview for verification
@@ -960,7 +960,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             prompt_parts.append(f"User: {content}")
             logger.info(f"Message {idx} (user) added to prompt: length={len(content)} characters, first 200: {content[:200]}...")
             # Check if this message contains MemoRAG
-            if ("MEMORAG" in content_upper or "ПОДСКАЗКИ MEMORAG" in content_upper or "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in content_upper):
+            if ("MEMORAG" in content_upper or "MEMORAG SEARCH CLUES" in content_upper or "KNOWLEDGE BASE FRAGMENTS" in content_upper):
                 logger.info(f"   ✅ Message {idx} contains MemoRAG context and will be added to prompt!")
         elif role == "assistant":
             prompt_parts.append(f"Assistant: {content}")
@@ -972,11 +972,11 @@ async def create_chat_completion(request: ChatCompletionRequest):
     prompt_upper_check = prompt.upper()
     has_memorag_in_prompt = (
         "MEMORAG" in prompt_upper_check or
-        "ПОДСКАЗКИ MEMORAG" in prompt_upper_check or
-        "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in prompt_upper_check or
-        "🔍 ПОДСКАЗКИ" in prompt or
-        "💾 КОНТЕКСТ ИЗ ПАМЯТИ" in prompt or
-        "📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ" in prompt
+        "MEMORAG SEARCH CLUES" in prompt_upper_check or
+        "KNOWLEDGE BASE FRAGMENTS" in prompt_upper_check or
+        "🔍" in prompt and "CLUES" in prompt_upper_check or
+        "💾" in prompt and "MEMORY CONTEXT" in prompt_upper_check or
+        "📄" in prompt and "RELEVANT" in prompt_upper_check
     )
     
     logger.info(f"Final prompt length in create_chat_completion: {len(prompt)} characters")
@@ -986,9 +986,9 @@ async def create_chat_completion(request: ChatCompletionRequest):
     
     if has_memorag_in_prompt:
         # Find MemoRAG position in prompt
-        memorag_pos = prompt_upper_check.find("ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ")
+        memorag_pos = prompt_upper_check.find("KNOWLEDGE BASE FRAGMENTS")
         if memorag_pos < 0:
-            memorag_pos = prompt_upper_check.find("ПОДСКАЗКИ MEMORAG")
+            memorag_pos = prompt_upper_check.find("MEMORAG SEARCH CLUES")
         if memorag_pos < 0:
             memorag_pos = prompt_upper_check.find("MEMORAG")
         if memorag_pos >= 0:
@@ -1000,7 +1000,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             logger.warning(f"⚠️ This means MemoRAG context was lost during prompt formation!")
             logger.warning(f"⚠️ Checking prompt parts:")
             for idx, part in enumerate(prompt_parts):
-                if "MEMORAG" in part.upper() or "ПОДСКАЗКИ" in part or "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in part:
+                if "MEMORAG" in part.upper() or "CLUES" in part or "KNOWLEDGE BASE FRAGMENTS" in part:
                     logger.warning(f"   ✓ Part {idx} contains MemoRAG: {part[:200]}...")
                 else:
                     logger.warning(f"   ✗ Part {idx} does NOT contain MemoRAG: {part[:200]}...")
@@ -1026,28 +1026,28 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # Additional check: search for patient data in final prompt
     prompt_upper = prompt.upper()
     patient_data_in_final_prompt = (
-        "ДАННЫЕ ПАЦИЕНТА" in prompt_upper or 
-        "МЕДИЦИНСКИЕ ДОКУМЕНТЫ" in prompt_upper or
-        ("ПАЦИЕНТ:" in prompt_upper and "ДОКУМЕНТ" in prompt_upper)
+"PATIENT DATA" in prompt_upper or
+        "MEDICAL DOCUMENTS" in prompt_upper or
+        ("PATIENT:" in prompt_upper and "DOCUMENT" in prompt_upper)
     )
     
     # Check for MemoRAG context in final prompt
     memorag_in_final_prompt = (
         "MEMORAG" in prompt_upper or
-        "ПОДСКАЗКИ MEMORAG" in prompt_upper or
-        "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in prompt_upper or
-        "РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ" in prompt_upper or
-        "КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG" in prompt_upper or
-        "🔍 ПОДСКАЗКИ" in prompt or
-        "💾 КОНТЕКСТ ИЗ ПАМЯТИ" in prompt or
-        "📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ" in prompt
+        "MEMORAG SEARCH CLUES" in prompt_upper or
+        "KNOWLEDGE BASE FRAGMENTS" in prompt_upper or
+        "RELEVANT KNOWLEDGE BASE" in prompt_upper or
+        "MEMORAG MEMORY CONTEXT" in prompt_upper or
+        ("🔍" in prompt and "CLUES" in prompt_upper) or
+        ("💾" in prompt and "MEMORY CONTEXT" in prompt_upper) or
+        ("📄" in prompt and "RELEVANT" in prompt_upper)
     )
     
     if patient_data_present or patient_data_in_final_prompt:
         logger.info("✓ ✓ ✓ Patient data present in prompt ✓ ✓ ✓")
         # Find patient data position in prompt
-        if "ДАННЫЕ ПАЦИЕНТА" in prompt_upper:
-            patient_start = prompt_upper.find("ДАННЫЕ ПАЦИЕНТА")
+        if "PATIENT DATA" in prompt_upper:
+            patient_start = prompt_upper.find("PATIENT DATA")
             logger.info(f"✓ Patient data position in prompt: character {patient_start}")
             logger.info(f"✓ Patient data block length: ~{min(2000, len(prompt) - patient_start)} characters")
         else:
@@ -1065,10 +1065,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
         logger.info("✅ ✅ ✅ MemoRAG context present in prompt ✅ ✅ ✅")
         # Find MemoRAG context position in prompt
         memorag_markers = [
-            "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ (MEMORAG)",
-            "ПОДСКАЗКИ MEMORAG ДЛЯ ПОИСКА",
-            "КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG",
-            "РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ"
+            "KNOWLEDGE BASE FRAGMENTS (MEMORAG)",
+            "MEMORAG SEARCH CLUES",
+            "MEMORAG MEMORY CONTEXT",
+            "RELEVANT KNOWLEDGE BASE DOCUMENTS"
         ]
         for marker in memorag_markers:
             marker_upper = marker.upper()
@@ -1081,12 +1081,12 @@ async def create_chat_completion(request: ChatCompletionRequest):
                 break
     else:
         logger.warning("⚠️ ⚠️ ⚠️ WARNING: MemoRAG context NOT found in final prompt ⚠️ ⚠️ ⚠️")
-        logger.warning(f"   Check performed by keywords: MEMORAG, ПОДСКАЗКИ, ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ")
+        logger.warning(f"   Check performed by keywords: MEMORAG, CLUES, KNOWLEDGE BASE FRAGMENTS")
         logger.warning(f"   Number of messages: {len(request.messages)}")
         # Log all messages for debugging
         for idx, msg in enumerate(request.messages):
             content_preview = msg.content[:200].replace('\n', ' ')
-            has_memorag = "MEMORAG" in msg.content.upper() or "ПОДСКАЗКИ" in msg.content or "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in msg.content
+            has_memorag = "MEMORAG" in msg.content.upper() or "CLUES" in msg.content or "KNOWLEDGE BASE FRAGMENTS" in msg.content
             logger.warning(f"   Message {idx}: role={msg.role}, length={len(msg.content)}, has_memorag={has_memorag}, preview={content_preview}")
     
     # Output FULL prompt for debugging
@@ -1103,7 +1103,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
     
     # Output fragment with patient data if available
     if patient_data_in_final_prompt:
-        patient_start = prompt_upper.find("ДАННЫЕ ПАЦИЕНТА")
+        patient_start = prompt_upper.find("PATIENT DATA")
         if patient_start >= 0:
             patient_snippet = prompt[patient_start:patient_start + 1500]
             logger.info(f"\n📋 Prompt fragment with patient data (characters {patient_start}-{patient_start+1500}):\n{patient_snippet}...")
@@ -1111,10 +1111,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # Output fragment with MemoRAG context if available
     if memorag_in_final_prompt:
         memorag_markers = [
-            "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ (MEMORAG)",
-            "ПОДСКАЗКИ MEMORAG ДЛЯ ПОИСКА",
-            "КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG",
-            "РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ"
+            "KNOWLEDGE BASE FRAGMENTS (MEMORAG)",
+            "MEMORAG SEARCH CLUES",
+            "MEMORAG MEMORY CONTEXT",
+            "RELEVANT KNOWLEDGE BASE DOCUMENTS"
         ]
         for marker in memorag_markers:
             marker_upper = marker.upper()
@@ -1192,14 +1192,14 @@ async def create_chat_completion(request: ChatCompletionRequest):
                 
     except httpx.ConnectError as e:
         logger.error(f"Error connecting to Ollama: {e}")
-        raise HTTPException(status_code=400, detail="Не удается подключиться к Ollama серверу. Убедитесь, что Ollama запущен.")
+        raise HTTPException(status_code=400, detail="Cannot connect to Ollama server. Ensure Ollama is running.")
     except httpx.TimeoutException as e:
         logger.error(f"Timeout when accessing Ollama: {e}")
-        raise HTTPException(status_code=400, detail="Таймаут генерации")
+        raise HTTPException(status_code=400, detail="Generation timeout")
     except Exception as e:
         logger.error(f"Unexpected generation error: {type(e).__name__}: {str(e)}")
         logger.error(f"Full error information: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Ошибка генерации: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
 
 async def stream_chat_completion_ollama(prompt: str, request: ChatCompletionRequest):
     """Streaming chat generation via Ollama"""
@@ -1214,7 +1214,7 @@ async def stream_chat_completion_ollama(prompt: str, request: ChatCompletionRequ
         if is_heavy_model:
             logger.info(f"Heavy model detected: {request.model}. Increasing timeouts.")
             # Send special event for heavy models
-            yield f"data: {json.dumps({'type': 'start', 'id': f'chatcmpl-{hash(prompt) % 1000000}', 'heavy_model': True, 'message': 'Загружаем тяжелую модель, это может занять время...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'start', 'id': f'chatcmpl-{hash(prompt) % 1000000}', 'heavy_model': True, 'message': 'Loading heavy model, this may take a while...'})}\n\n"
         else:
             # Send regular initial event
             yield f"data: {json.dumps({'type': 'start', 'id': f'chatcmpl-{hash(prompt) % 1000000}'})}\n\n"
@@ -1227,7 +1227,7 @@ async def stream_chat_completion_ollama(prompt: str, request: ChatCompletionRequ
                     models_data = check_response.json()
                     available_models = [model["name"] for model in models_data.get("models", [])]
                     if request.model not in available_models:
-                        error_msg = f"Модель {request.model} не найдена в Ollama. Доступные модели: {', '.join(available_models)}"
+                        error_msg = f"Model {request.model} not found in Ollama. Available models: {', '.join(available_models)}"
                         logger.error(error_msg)
                         yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
                         return
@@ -1306,7 +1306,7 @@ async def stream_chat_completion_ollama(prompt: str, request: ChatCompletionRequ
                                     # Check for errors from Ollama
                                     if "error" in data:
                                         error_msg = data["error"]
-                                        logger.error(f"Ollama вернул ошибку: {error_msg}")
+                                        logger.error(f"Ollama returned error: {error_msg}")
                                         yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
                                         return
                                         
@@ -1323,14 +1323,14 @@ async def stream_chat_completion_ollama(prompt: str, request: ChatCompletionRequ
     except httpx.ConnectError:
         logger.error("Error connecting to Ollama server")
         # Send error event
-        yield f"data: {json.dumps({'type': 'error', 'error': 'Не удается подключиться к Ollama серверу. Убедитесь, что Ollama запущен.'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Cannot connect to Ollama server. Ensure Ollama is running.'})}\n\n"
     except httpx.TimeoutException:
         logger.error("Timeout when accessing Ollama")
         # Send error event
-        error_msg = f"Таймаут при обращении к Ollama (5 минут). Модель {request.model} может быть слишком тяжелой или не загружена. Попробуйте выбрать более легкую модель или подождите дольше."
+        error_msg = f"Timeout contacting Ollama (5 min). Model {request.model} may be too heavy or not loaded. Try a lighter model or wait longer."
         yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
     except Exception as e:
-        error_msg = str(e) if str(e) else f"Неизвестная ошибка типа {type(e).__name__}"
+        error_msg = str(e) if str(e) else f"Unknown error type {type(e).__name__}"
         logger.error(f"Error in streaming generation: {error_msg}")
         logger.error(f"Error type: {type(e).__name__}")
         logger.error(f"Full error information: {repr(e)}")
@@ -1343,9 +1343,9 @@ async def load_model(model_name: str):
     try:
         success = await load_preset_model(model_name)
         if success:
-            return {"status": "success", "message": f"Модель {model_name} загружена"}
+            return {"status": "success", "message": f"Model {model_name} loaded"}
         else:
-            raise HTTPException(status_code=400, detail=f"Не удалось загрузить модель {model_name}")
+            raise HTTPException(status_code=400, detail=f"Failed to load model {model_name}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1392,16 +1392,16 @@ async def preload_ollama_model(model_name: str):
                 logger.info(f"Model {model_name} successfully preloaded")
                 return {
                     "status": "success", 
-                    "message": f"Модель {model_name} предзагружена и готова к работе",
+                    "message": f"Model {model_name} preloaded and ready",
                     "heavy_model": is_heavy_model
                 }
             else:
-                raise HTTPException(status_code=400, detail=f"Ошибка предзагрузки модели: {response.status_code}")
+                raise HTTPException(status_code=400, detail=f"Model preload error: {response.status_code}")
                 
     except httpx.TimeoutException:
-        raise HTTPException(status_code=400, detail=f"Таймаут при предзагрузке модели {model_name}")
+        raise HTTPException(status_code=400, detail=f"Timeout preloading model {model_name}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка предзагрузки: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Preload error: {str(e)}")
 
 @app.get("/model-info")
 async def get_model_info():
@@ -1433,7 +1433,7 @@ async def unload_model():
     """Unloads current model from memory"""
     model_manager.current_model = None
     model_manager.current_tokenizer = None
-    return {"status": "success", "message": "Модель выгружена"}
+    return {"status": "success", "message": "Model unloaded"}
 
 @app.get("/status")
 async def get_status():
@@ -1467,11 +1467,11 @@ async def connect_to_ollama(request: OllamaConnectRequest):
             else:
                 raise HTTPException(status_code=400, detail=f"Ollama server returned status {response.status_code}")
     except httpx.ConnectError:
-        raise HTTPException(status_code=400, detail="Не удается подключиться к Ollama серверу")
+        raise HTTPException(status_code=400, detail="Cannot connect to Ollama server")
     except httpx.TimeoutException:
-        raise HTTPException(status_code=400, detail="Таймаут подключения к Ollama")
+        raise HTTPException(status_code=400, detail="Ollama connection timeout")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка подключения: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Connection error: {str(e)}")
 
 @app.get("/ollama/models")
 async def get_ollama_models(url: str = None):
@@ -1506,26 +1506,26 @@ async def get_ollama_models(url: str = None):
                     "count": len(model_names)
                 }
             else:
-                logger.error(f"Ollama вернул статус {response.status_code}")
+                logger.error(f"Ollama returned status {response.status_code}")
                 raise HTTPException(status_code=400, detail=f"Ollama server returned status {response.status_code}")
                 
     except httpx.ConnectError as e:
         error_msg = f"Не удается подключиться к Ollama серверу на {ollama_url if 'ollama_url' in locals() else 'unknown'}"
         logger.error(f"{error_msg}: {e}")
-        logger.error(f"Убедитесь, что Ollama запущен и доступен по адресу {ollama_url}")
+        logger.error(f"Ensure Ollama is running and reachable at {ollama_url}")
         raise HTTPException(
             status_code=400, 
-            detail=f"{error_msg}. Убедитесь, что Ollama запущен и доступен по адресу {ollama_url}"
+            detail=f"{error_msg}. Ensure Ollama is running and reachable at {ollama_url}"
         )
     except httpx.TimeoutException as e:
         error_msg = f"Таймаут подключения к Ollama серверу на {ollama_url if 'ollama_url' in locals() else 'unknown'}"
         logger.error(f"{error_msg}: {e}")
         raise HTTPException(status_code=400, detail=error_msg)
     except Exception as e:
-        error_msg = f"Ошибка при получении моделей Ollama: {type(e).__name__}: {e}"
+        error_msg = f"Error getting Ollama models: {type(e).__name__}: {e}"
         logger.error(error_msg)
         logger.error(f"URL Ollama: {ollama_url if 'ollama_url' in locals() else 'unknown'}")
-        raise HTTPException(status_code=400, detail=f"Ошибка подключения к Ollama: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Ollama connection error: {str(e)}")
 
 @app.post("/ollama/generate")
 async def generate_with_ollama(request: OllamaGenerateRequest):
@@ -1560,11 +1560,11 @@ async def generate_with_ollama(request: OllamaGenerateRequest):
             else:
                 raise HTTPException(status_code=400, detail=f"Ollama generation failed: {response.status_code}")
     except httpx.ConnectError:
-        raise HTTPException(status_code=400, detail="Не удается подключиться к Ollama серверу")
+        raise HTTPException(status_code=400, detail="Cannot connect to Ollama server")
     except httpx.TimeoutException:
-        raise HTTPException(status_code=400, detail="Таймаут генерации")
+        raise HTTPException(status_code=400, detail="Generation timeout")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка генерации: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Generation error: {str(e)}")
 
 @app.post("/ollama/generate-stream")
 async def generate_with_ollama_stream(request: OllamaGenerateRequest):
@@ -1596,11 +1596,11 @@ async def generate_with_ollama_stream(request: OllamaGenerateRequest):
                 else:
                     raise HTTPException(status_code=400, detail=f"Ollama generation failed: {response.status_code}")
     except httpx.ConnectError:
-        raise HTTPException(status_code=400, detail="Не удается подключиться к Ollama серверу")
+        raise HTTPException(status_code=400, detail="Cannot connect to Ollama server")
     except httpx.TimeoutException:
-        raise HTTPException(status_code=400, detail="Таймаут генерации")
+        raise HTTPException(status_code=400, detail="Generation timeout")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка генерации: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Generation error: {str(e)}")
 
 async def stream_ollama_response(response):
     """Streaming processing of response from Ollama"""
@@ -1629,8 +1629,8 @@ async def stream_ollama_response(response):
         yield f"data: {json.dumps({'type': 'end', 'full_response': full_response})}\n\n"
         
     except Exception as e:
-        error_msg = str(e) if str(e) else f"Неизвестная ошибка типа {type(e).__name__}"
-        logger.error(f"Ошибка в stream_ollama_response: {error_msg}")
+        error_msg = str(e) if str(e) else f"Unknown error type {type(e).__name__}"
+        logger.error(f"Error in stream_ollama_response: {error_msg}")
         # Send error event
         yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
 
@@ -1646,7 +1646,7 @@ async def manage_ollama_model(request: OllamaModelRequest):
                 if response.status_code == 200:
                     return {"status": "success", "message": f"Модель {request.model} удалена"}
                 else:
-                    raise HTTPException(status_code=400, detail=f"Ошибка удаления модели: {response.status_code}")
+                    raise HTTPException(status_code=400, detail=f"Model deletion error: {response.status_code}")
             
             elif request.action == "info":
                 # Model information
@@ -1669,15 +1669,15 @@ async def manage_ollama_model(request: OllamaModelRequest):
                         }
                     }
                 else:
-                    raise HTTPException(status_code=400, detail=f"Ошибка получения информации: {response.status_code}")
+                    raise HTTPException(status_code=400, detail=f"Error getting info: {response.status_code}")
             
             else:
-                raise HTTPException(status_code=400, detail="Поддерживаются только действия: remove, info")
+                raise HTTPException(status_code=400, detail="Only actions supported: remove, info")
                 
     except httpx.ConnectError:
-        raise HTTPException(status_code=400, detail="Не удается подключиться к Ollama серверу")
+        raise HTTPException(status_code=400, detail="Cannot connect to Ollama server")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error: {str(e)}")
 
 @app.post("/ollama/config")
 async def configure_ollama(request: OllamaConfigRequest):
@@ -1716,7 +1716,7 @@ async def configure_ollama(request: OllamaConfigRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка настройки: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Settings error: {str(e)}")
 
 @app.get("/ollama/system")
 async def get_ollama_system_info():
@@ -1765,7 +1765,7 @@ async def get_ollama_system_info():
                         "connection_info": connection_info
                     }
             else:
-                raise HTTPException(status_code=400, detail="Не удается получить информацию о системе")
+                raise HTTPException(status_code=400, detail="Cannot get system information")
                 
     except httpx.ConnectError:
         return {
@@ -1776,7 +1776,7 @@ async def get_ollama_system_info():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка: {str(e)}",
+            "message": f"Error: {str(e)}",
             "connection_info": connection_info
         }
 
@@ -1794,7 +1794,7 @@ async def get_ollama_connection_status():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка получения статуса соединений: {str(e)}"
+            "message": f"Error getting connection status: {str(e)}"
         }
 
 # Configuration management endpoints
@@ -1814,7 +1814,7 @@ async def get_config_info():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка получения конфигурации: {str(e)}"
+            "message": f"Error getting configuration: {str(e)}"
         }
 
 @app.get("/config/full")
@@ -1940,7 +1940,7 @@ async def get_full_config():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка получения полной конфигурации: {str(e)}"
+            "message": f"Error getting full configuration: {str(e)}"
         }
 
 @app.post("/config/reload")
@@ -1961,7 +1961,7 @@ async def reload_config():
         global config
         config = get_config()
         
-        logger.info(f"Конфигурация перезагружена. Новый Ollama URL: {config.ollama.url}")
+        logger.info(f"Configuration reloaded. New Ollama URL: {config.ollama.url}")
         
         return {
             "status": "success",
@@ -1969,10 +1969,10 @@ async def reload_config():
             "ollama_url": config.ollama.url
         }
     except Exception as e:
-        logger.error(f"Ошибка перезагрузки конфигурации: {e}")
+        logger.error(f"Configuration reload error: {e}")
         return {
             "status": "error",
-            "message": f"Ошибка перезагрузки конфигурации: {str(e)}"
+            "message": f"Error reloading configuration: {str(e)}"
         }
 
 @app.post("/config/save")
@@ -1989,7 +1989,7 @@ async def save_config():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка сохранения конфигурации: {str(e)}"
+            "message": f"Error saving configuration: {str(e)}"
         }
 
 # File upload endpoints
@@ -1998,13 +1998,13 @@ async def upload_file_to_rag(file: UploadFile = File(...)):
     """Upload file to RAG system"""
     try:
         global rag_system
-        print(f"Получен файл: {file.filename}, размер: {file.size}, тип: {file.content_type}")
+        print(f"Received file: {file.filename}, size: {file.size}, type: {file.content_type}")
         
         file_processor = get_file_processor()
         
         # Check file format
         if not file_processor.is_supported_format(file.filename):
-            print(f"Неподдерживаемый формат: {file.filename}")
+            print(f"Unsupported format: {file.filename}")
             return FileUploadResponse(
                 status="error",
                 message="Неподдерживаемый формат файла",
@@ -2032,14 +2032,14 @@ async def upload_file_to_rag(file: UploadFile = File(...)):
             chunk_size=rag_system.chunk_size,
             chunk_overlap=rag_system.chunk_overlap
         )
-        print(f"Результат обработки: {result['status']}, чанков: {result.get('chunks_count', 0)}")
+        print(f"Processing result: {result['status']}, chunks: {result.get('chunks_count', 0)}")
         
         if result["status"] == "error":
-            print(f"Ошибка обработки файла: {result['error']}")
+            print(f"File processing error: {result['error']}")
             file_processor.cleanup_temp_file(temp_file_path)
             return FileUploadResponse(
                 status="error",
-                message="Ошибка обработки файла",
+                message="Error обработки файла",
                 error=result["error"]
             )
         
@@ -2077,14 +2077,14 @@ async def upload_file_to_rag(file: UploadFile = File(...)):
         )
         
     except Exception as e:
-        logger.error(f"Ошибка загрузки файла {file.filename if 'file' in locals() else 'unknown'}: {type(e).__name__}: {e}")
+        logger.error(f"File upload error {file.filename if 'file' in locals() else 'unknown'}: {type(e).__name__}: {e}")
         import traceback
         error_traceback = traceback.format_exc()
         logger.error(f"Traceback: {error_traceback}")
         
         return FileUploadResponse(
             status="error",
-            message="Ошибка загрузки файла",
+            message="Error загрузки файла",
             error=f"{type(e).__name__}: {str(e)}"
         )
 
@@ -2106,7 +2106,7 @@ async def get_supported_formats():
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения форматов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting formats: {str(e)}")
 
 @app.get("/rag/ollama-embedding-models")
 async def get_ollama_embedding_models():
@@ -2121,7 +2121,7 @@ async def get_ollama_embedding_models():
             "current_model": ollama_embeddings.get_current_model()
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения моделей эмбеддингов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting embedding models: {str(e)}")
 
 @app.post("/rag/set-ollama-embedding-model")
 async def set_ollama_embedding_model(model_name: str):
@@ -2138,9 +2138,9 @@ async def set_ollama_embedding_model(model_name: str):
                 "dimension": await ollama_embeddings.get_embedding_dimension()
             }
         else:
-            raise HTTPException(status_code=400, detail=f"Не удалось установить модель: {model_name}")
+            raise HTTPException(status_code=400, detail=f"Failed to set model: {model_name}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка установки модели эмбеддингов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error setting embedding model: {str(e)}")
 
 # RAG эндпоинты
 @app.get("/rag/config")
@@ -2165,7 +2165,7 @@ async def get_rag_config():
             "config": rag_config
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения конфигурации RAG: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting RAG configuration: {str(e)}")
 
 @app.post("/rag/config")
 async def configure_rag(request: RAGConfigRequest):
@@ -2227,8 +2227,8 @@ async def configure_rag(request: RAGConfigRequest):
             "stats": stats
         }
     except Exception as e:
-        rag_logger.log_error(f"Ошибка настройки RAG: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Ошибка настройки RAG: {str(e)}")
+        rag_logger.log_error(f"RAG configuration error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error configuring RAG: {str(e)}")
 
 @app.post("/rag/documents")
 async def add_documents(request: RAGDocumentRequest):
@@ -2279,7 +2279,7 @@ async def add_documents(request: RAGDocumentRequest):
             "chunks": all_chunks  # Добавляем чанки для MemoRAG
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка добавления документов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error adding documents: {str(e)}")
 
 @app.post("/rag/search")
 async def search_documents(request: RAGSearchRequest):
@@ -2296,7 +2296,7 @@ async def search_documents(request: RAGSearchRequest):
             "count": len(results)
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка поиска: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Search error: {str(e)}")
 
 @app.get("/rag/stats")
 async def get_rag_stats():
@@ -2323,8 +2323,8 @@ async def get_rag_stats():
         }
     except Exception as e:
         rag_logger = get_rag_logger()
-        rag_logger.log_error(f"Ошибка получения статистики: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Ошибка получения статистики: {str(e)}")
+        rag_logger.log_error(f"Error getting statistics: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting statistics: {str(e)}")
 
 @app.delete("/rag/documents")
 async def clear_rag_documents():
@@ -2352,8 +2352,8 @@ async def clear_rag_documents():
         }
     except Exception as e:
         rag_logger = get_rag_logger()
-        rag_logger.log_error(f"Ошибка очистки: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Ошибка очистки: {str(e)}")
+        rag_logger.log_error(f"Clear error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Clear error: {str(e)}")
 
 @app.post("/rag/chat")
 async def rag_chat_completion(request: RAGChatRequest):
@@ -2371,7 +2371,7 @@ async def rag_chat_completion(request: RAGChatRequest):
                 break
         
         if not user_message:
-            raise HTTPException(status_code=400, detail="Не найдено сообщение пользователя")
+            raise HTTPException(status_code=400, detail="User message not found")
         
         # Search for relevant documents
         relevant_docs = []
@@ -2432,7 +2432,7 @@ async def rag_chat_completion(request: RAGChatRequest):
                     response_text = "Извините, модель не загружена. Пожалуйста, загрузите модель для использования RAG чата."
                     
         except Exception as e:
-            response_text = f"Ошибка генерации: {str(e)}"
+            response_text = f"Generation error: {str(e)}"
         
         return {
             "status": "success",
@@ -2443,7 +2443,7 @@ async def rag_chat_completion(request: RAGChatRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка RAG чата: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error RAG чата: {str(e)}")
 
 @app.post("/rag/chat-stream")
 async def rag_chat_completion_stream(request: RAGChatRequest):
@@ -2461,7 +2461,7 @@ async def rag_chat_completion_stream(request: RAGChatRequest):
                 break
         
         if not user_message:
-            raise HTTPException(status_code=400, detail="Не найдено сообщение пользователя")
+            raise HTTPException(status_code=400, detail="User message not found")
         
         # Search for relevant documents
         relevant_docs = []
@@ -2500,7 +2500,7 @@ async def rag_chat_completion_stream(request: RAGChatRequest):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка RAG чата: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error RAG чата: {str(e)}")
 
 async def stream_rag_chat_completion(prompt: str, request: RAGChatRequest, relevant_docs_count: int, context_added: bool, model_name: Optional[str] = None):
     """Streaming RAG chat generation"""
@@ -2553,8 +2553,8 @@ async def stream_rag_chat_completion(prompt: str, request: RAGChatRequest, relev
             yield f"data: {json.dumps({'type': 'error', 'error': 'Не удается подключиться к Ollama серверу'})}\n\n"
             return
         except Exception as e:
-            error_msg = str(e) if str(e) else f"Неизвестная ошибка типа {type(e).__name__}"
-            logger.error(f"Ошибка в stream_rag_chat_completion: {error_msg}")
+            error_msg = str(e) if str(e) else f"Unknown error type {type(e).__name__}"
+            logger.error(f"Error in stream_rag_chat_completion: {error_msg}")
             yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
             return
         
@@ -2562,8 +2562,8 @@ async def stream_rag_chat_completion(prompt: str, request: RAGChatRequest, relev
         yield f"data: {json.dumps({'type': 'end', 'full_response': full_response, 'rag_info': {'used_rag': request.use_rag, 'relevant_docs_count': relevant_docs_count, 'context_added': context_added}})}\n\n"
         
     except Exception as e:
-        error_msg = str(e) if str(e) else f"Неизвестная ошибка типа {type(e).__name__}"
-        logger.error(f"Ошибка в stream_rag_chat_completion (внешний catch): {error_msg}")
+        error_msg = str(e) if str(e) else f"Unknown error type {type(e).__name__}"
+        logger.error(f"Error in stream_rag_chat_completion (outer catch): {error_msg}")
         # Send error event
         yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
 
@@ -2583,7 +2583,7 @@ async def get_rag_logs(limit: int = 100, level: Optional[str] = None):
             "level_filter": level
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения логов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting logs: {str(e)}")
 
 @app.get("/rag/logs/stats")
 async def get_rag_log_stats():
@@ -2597,7 +2597,7 @@ async def get_rag_log_stats():
             "stats": stats
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения статистики логов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting log statistics: {str(e)}")
 
 @app.delete("/rag/logs")
 async def clear_rag_logs():
@@ -2611,7 +2611,7 @@ async def clear_rag_logs():
             "message": "Логи RAG системы очищены"
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка очистки логов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error clearing logs: {str(e)}")
 
 # MemoRAG эндпоинты
 @app.post("/memorag/documents")
@@ -2627,7 +2627,7 @@ async def add_documents_to_memorag(request: RAGDocumentRequest):
             "results": results
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка добавления документов в MemoRAG: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error adding documents to MemoRAG: {str(e)}")
 
 @app.post("/memorag/search")
 async def search_with_memory(request: RAGSearchRequest):
@@ -2652,7 +2652,7 @@ async def search_with_memory(request: RAGSearchRequest):
             "context_length": memo_rag.context_length
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка поиска в MemoRAG: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"MemoRAG search error: {str(e)}")
 
 @app.post("/rag/search-with-memory")
 async def rag_search_with_memory(request: RAGSearchRequest):
@@ -2675,7 +2675,7 @@ async def rag_search_with_memory(request: RAGSearchRequest):
             "total_results": len(results.get('results', []))
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка поиска с памятью: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Memory search error: {str(e)}")
 
 @app.post("/memorag/chat")
 async def memorag_chat_completion(request: RAGChatRequest):
@@ -2692,7 +2692,7 @@ async def memorag_chat_completion(request: RAGChatRequest):
                 user_message = msg.content
                 break
         if not user_message:
-            raise HTTPException(status_code=400, detail="Не найдено сообщение пользователя")
+            raise HTTPException(status_code=400, detail="User message not found")
 
         # Поиск через MemoRAG
         search_results = await memo_rag.search_with_memory(user_message, request.rag_top_k)
@@ -2771,7 +2771,7 @@ async def memorag_chat_completion(request: RAGChatRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка MemoRAG чата: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error MemoRAG чата: {str(e)}")
 
 @app.get("/memorag/memory-stats")
 async def get_memory_stats():
@@ -2785,7 +2785,7 @@ async def get_memory_stats():
             "memory_stats": stats
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения статистики памяти: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting memory statistics: {str(e)}")
 
 @app.delete("/memorag/memory")
 async def clear_memorag_memory():
@@ -2795,22 +2795,22 @@ async def clear_memorag_memory():
         
         # Получаем статистику до очистки
         stats_before = memo_rag.get_memory_stats()
-        print(f"DEBUG: Статистика до очистки: {stats_before['total_entries']} записей")
+        print(f"DEBUG: Stats before clear: {stats_before['total_entries']} entries")
         
         memo_rag.clear_memory()
         
         # Получаем статистику после очистки
         stats_after = memo_rag.get_memory_stats()
-        print(f"DEBUG: Статистика после очистки: {stats_after['total_entries']} записей")
+        print(f"DEBUG: Stats after clear: {stats_after['total_entries']} entries")
         
         return {
             "status": "success",
-            "message": "Память MemoRAG очищена",
+            "message": "MemoRAG memory cleared",
             "stats_before": stats_before,
             "stats_after": stats_after
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка очистки памяти: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error clearing memory: {str(e)}")
 
 @app.get("/memorag/memory-debug")
 async def get_memory_debug_info():
@@ -2824,7 +2824,7 @@ async def get_memory_debug_info():
             "debug_info": debug_info
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения отладочной информации: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting debug info: {str(e)}")
 
 @app.post("/memorag/migrate-existing")
 async def migrate_existing_rag_to_memorag():
@@ -2844,7 +2844,7 @@ async def migrate_existing_rag_to_memorag():
             
             return {
                 "status": "success",
-                "message": f"Мигрировано {len(documents)} документов в MemoRAG память",
+                "message": f"Migrated {len(documents)} documents to MemoRAG memory",
                 "migrated_count": len(documents),
                 "memo_rag_result": result
             }
@@ -2856,7 +2856,7 @@ async def migrate_existing_rag_to_memorag():
             }
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка миграции: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Migration error: {str(e)}")
 
 @app.get("/memorag/migrate-status")
 async def get_migration_status():
@@ -2888,7 +2888,7 @@ async def get_migration_status():
                 
                 return {"total_chunks": 0}
             except Exception as e:
-                logger.warning(f"Ошибка получения RAG статистики: {e}")
+                logger.warning(f"Error getting RAG stats: {e}")
                 return {"total_chunks": 0}
         
         async def check_memo_status():
@@ -2906,7 +2906,7 @@ async def get_migration_status():
                 estimated_entries = max(0, file_size // 100)
                 return {"total_entries": estimated_entries}
             except Exception as e:
-                logger.warning(f"Ошибка получения MemoRAG статистики: {e}")
+                logger.warning(f"Error getting MemoRAG stats: {e}")
                 return {"total_entries": 0}
         
         # Выполняем проверки с таймаутом
@@ -2922,15 +2922,15 @@ async def get_migration_status():
             
             # Обрабатываем исключения
             if isinstance(rag_stats, Exception):
-                logger.warning(f"RAG проверка завершилась с ошибкой: {rag_stats}")
+                logger.warning(f"RAG check failed: {rag_stats}")
                 rag_stats = {"total_chunks": 0}
             
             if isinstance(memo_stats, Exception):
-                logger.warning(f"MemoRAG проверка завершилась с ошибкой: {memo_stats}")
+                logger.warning(f"MemoRAG check failed: {memo_stats}")
                 memo_stats = {"total_entries": 0}
             
         except asyncio.TimeoutError:
-            logger.warning("Таймаут при проверке статуса миграции")
+            logger.warning("Timeout checking migration status")
             rag_stats = {"total_chunks": 0}
             memo_stats = {"total_entries": 0}
         
@@ -2947,10 +2947,10 @@ async def get_migration_status():
         }
         
     except Exception as e:
-        logger.error(f"Критическая ошибка проверки статуса: {e}")
+        logger.error(f"Critical status check error: {e}")
         return {
             "status": "error",
-            "message": f"Ошибка проверки статуса: {str(e)}",
+            "message": f"Error checking status: {str(e)}",
             "rag_documents": 0,
             "memo_rag_entries": 0,
             "migration_needed": False,
@@ -2959,10 +2959,10 @@ async def get_migration_status():
         }
 
 if __name__ == "__main__":
-    print("Запуск AI Assistant API сервера...")
+    print("Starting AI Assistant API server...")
     
     # Проверка подключения к Ollama при старте - ТОЧНО КАК В ТЕСТЕ
-    print("\nПроверка подключения к Ollama...")
+    print("\nChecking Ollama connection...")
     async def check_ollama_startup():
         try:
             # Прямой HTTP запрос (как в тесте)
@@ -2973,59 +2973,59 @@ if __name__ == "__main__":
                 if response.status_code == 200:
                     data = response.json()
                     models = data.get("models", [])
-                    print(f"✓ Ollama подключен! Найдено моделей: {len(models)}")
+                    print(f"✓ Ollama connected! Models found: {len(models)}")
                 else:
-                    print(f"⚠ Ollama вернул статус {response.status_code}")
+                    print(f"⚠ Ollama returned status {response.status_code}")
         except httpx.ConnectError:
-            print(f"⚠ Ollama недоступен на {config.ollama.url}")
-            print("  Убедитесь, что Ollama запущен!")
+            print(f"⚠ Ollama unavailable at {config.ollama.url}")
+            print("  Ensure Ollama is running!")
         except Exception as e:
-            print(f"⚠ Ошибка проверки Ollama: {e}")
+            print(f"⚠ Ollama check error: {e}")
     
     asyncio.run(check_ollama_startup())
     
-    print("\nДоступные эндпоинты:")
-    print("- GET  / - веб-интерфейс")
-    print("- GET  /api - информация об API")
-    print("- GET  /health - проверка состояния")
-    print("- GET  /v1/models - список моделей")
-    print("- POST /v1/chat/completions - генерация текста")
-    print("- POST /load-model - загрузка модели")
-    print("- GET  /model-info - информация о модели")
-    print("- GET  /status - полный статус")
-    print("- POST /ollama/connect - подключение к Ollama")
-    print("- GET  /ollama/models - список моделей Ollama")
-    print("- POST /ollama/generate - генерация через Ollama")
-    print("- POST /ollama/generate-stream - потоковая генерация через Ollama")
-    print("- POST /ollama/model - управление локальными моделями (remove/info)")
-    print("- POST /ollama/config - настройка режимов (GPU/CPU/Balanced)")
-    print("- GET  /ollama/system - информация о системе")
-    print("- GET  /ollama/connection-status - статус соединений")
-    print("- GET  /config - информация о конфигурации")
-    print("- GET  /config/full - полная конфигурация")
-    print("- POST /config/reload - перезагрузка конфигурации")
-    print("- POST /config/save - сохранение конфигурации")
-    print("- POST /rag/config - настройка RAG (FAISS/Chroma/Ollama)")
-    print("- POST /rag/documents - добавление документов")
-    print("- POST /rag/search - поиск документов")
-    print("- GET  /rag/stats - статистика RAG")
-    print("- DELETE /rag/documents - очистка документов")
-    print("- POST /rag/chat - чат с RAG")
-    print("- POST /rag/chat-stream - потоковый чат с RAG")
-    print("- POST /rag/upload-file - загрузка файлов в RAG")
-    print("- GET  /rag/supported-formats - поддерживаемые форматы")
-    print("- GET  /rag/ollama-embedding-models - модели эмбеддингов Ollama")
-    print("- POST /rag/set-ollama-embedding-model - установка модели эмбеддингов")
-    print("- GET  /rag/logs - получение логов RAG системы")
-    print("- GET  /rag/logs/stats - статистика логов")
-    print("- DELETE /rag/logs - очистка логов")
-    print("- POST /memorag/documents - добавление документов в MemoRAG")        
-    print("- POST /memorag/search - поиск с глобальной памятью")
-    print("- POST /memorag/chat - чат с MemoRAG")
-    print("- GET  /memorag/memory-stats - статистика памяти MemoRAG")
-    print("- DELETE /memorag/memory - очистка памяти MemoRAG")
+    print("\nAvailable endpoints:")
+    print("- GET  / - web interface")
+    print("- GET  /api - API info")
+    print("- GET  /health - health check")
+    print("- GET  /v1/models - model list")
+    print("- POST /v1/chat/completions - text generation")
+    print("- POST /load-model - load model")
+    print("- GET  /model-info - model info")
+    print("- GET  /status - full status")
+    print("- POST /ollama/connect - connect to Ollama")
+    print("- GET  /ollama/models - Ollama models")
+    print("- POST /ollama/generate - generate via Ollama")
+    print("- POST /ollama/generate-stream - stream generate via Ollama")
+    print("- POST /ollama/model - manage local models (remove/info)")
+    print("- POST /ollama/config - set modes (GPU/CPU/Balanced)")
+    print("- GET  /ollama/system - system info")
+    print("- GET  /ollama/connection-status - connection status")
+    print("- GET  /config - configuration info")
+    print("- GET  /config/full - full configuration")
+    print("- POST /config/reload - reload configuration")
+    print("- POST /config/save - save configuration")
+    print("- POST /rag/config - configure RAG (FAISS/Chroma/Ollama)")
+    print("- POST /rag/documents - add documents")
+    print("- POST /rag/search - search documents")
+    print("- GET  /rag/stats - RAG statistics")
+    print("- DELETE /rag/documents - clear documents")
+    print("- POST /rag/chat - RAG chat")
+    print("- POST /rag/chat-stream - RAG stream chat")
+    print("- POST /rag/upload-file - upload files to RAG")
+    print("- GET  /rag/supported-formats - supported formats")
+    print("- GET  /rag/ollama-embedding-models - Ollama embedding models")
+    print("- POST /rag/set-ollama-embedding-model - set embedding model")
+    print("- GET  /rag/logs - RAG logs")
+    print("- GET  /rag/logs/stats - log statistics")
+    print("- DELETE /rag/logs - clear logs")
+    print("- POST /memorag/documents - add documents to MemoRAG")
+    print("- POST /memorag/search - search with global memory")
+    print("- POST /memorag/chat - MemoRAG chat")
+    print("- GET  /memorag/memory-stats - MemoRAG memory statistics")
+    print("- DELETE /memorag/memory - clear MemoRAG memory")
 
-# API эндпоинты для пациентов
+# Patient API endpoints
 @app.get("/patients/stats", response_model=PatientsStatsResponse)
 async def get_patients_stats():
     """Get patient database statistics."""
@@ -3034,7 +3034,7 @@ async def get_patients_stats():
         stats = db.get_statistics()
         return PatientsStatsResponse(**stats)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения статистики: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting statistics: {str(e)}")
 
 @app.get("/patients", response_model=List[PatientResponse])
 async def get_all_patients():
@@ -3044,7 +3044,7 @@ async def get_all_patients():
         patients = db.get_all_patients()
         return [PatientResponse(**patient) for patient in patients]
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения пациентов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting patients: {str(e)}")
 
 @app.post("/patients", response_model=PatientResponse)
 async def add_patient(patient: PatientRequest):
@@ -3063,10 +3063,10 @@ async def add_patient(patient: PatientRequest):
         if created_patient:
             return PatientResponse(**created_patient)
         else:
-            raise HTTPException(status_code=400, detail="Ошибка создания пациента")
+            raise HTTPException(status_code=400, detail="Error creating patient")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка добавления пациента: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error adding patient: {str(e)}")
 
 @app.get("/patients/{patient_id}", response_model=PatientResponse)
 async def get_patient(patient_id: int):
@@ -3077,9 +3077,9 @@ async def get_patient(patient_id: int):
         if patient:
             return PatientResponse(**patient)
         else:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения пациента: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting patient: {str(e)}")
 
 @app.put("/patients/{patient_id}", response_model=PatientResponse)
 async def update_patient(patient_id: int, patient: PatientRequest):
@@ -3099,12 +3099,12 @@ async def update_patient(patient_id: int, patient: PatientRequest):
             if updated_patient:
                 return PatientResponse(**updated_patient)
             else:
-                raise HTTPException(status_code=400, detail="Ошибка получения обновленного пациента")
+                raise HTTPException(status_code=400, detail="Error getting updated patient")
         else:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка обновления пациента: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error updating patient: {str(e)}")
 
 @app.delete("/patients/clear-database")
 async def clear_patients_database():
@@ -3115,18 +3115,18 @@ async def clear_patients_database():
         print("DEBUG: Получен экземпляр базы данных")
         
         success = db.clear_database()
-        print(f"DEBUG: Результат очистки базы данных: {success}")
+        print(f"DEBUG: Database clear result: {success}")
         
         if success:
-            print("DEBUG: База данных успешно очищена")
-            return {"status": "success", "message": "База данных пациентов очищена"}
+            print("DEBUG: Database cleared successfully")
+            return {"status": "success", "message": "Patient database cleared"}
         else:
-            print("DEBUG: Ошибка очистки базы данных")
-            raise HTTPException(status_code=400, detail="Ошибка очистки базы данных")
+            print("DEBUG: Database clear error")
+            raise HTTPException(status_code=400, detail="Error clearing database")
             
     except Exception as e:
-        print(f"DEBUG: Исключение при очистке базы данных: {e}")
-        raise HTTPException(status_code=400, detail=f"Ошибка очистки базы данных: {str(e)}")
+        print(f"DEBUG: Exception during database clear: {e}")
+        raise HTTPException(status_code=400, detail=f"Error clearing database: {str(e)}")
 
 @app.get("/patients-db/export")
 async def export_patients_database(format: str = "sqlite"):
@@ -3149,7 +3149,7 @@ async def export_patients_database(format: str = "sqlite"):
         db_path = Path(db.db_path)
         
         if not db_path.exists():
-            raise HTTPException(status_code=404, detail="База данных не найдена")
+            raise HTTPException(status_code=404, detail="Database not found")
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_filename = f"patients_db_backup_{timestamp}"
@@ -3389,12 +3389,12 @@ async def export_patients_database(format: str = "sqlite"):
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Неподдерживаемый формат: {format}. Доступные форматы: sqlite, sql, json, zip"
+                detail=f"Unsupported format: {format}. Available: sqlite, sql, json, zip"
             )
             
     except Exception as e:
         logger.error(f"Ошибка выгрузки базы данных: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Ошибка выгрузки базы данных: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error exporting database: {str(e)}")
 
 @app.post("/patients-db/import")
 async def import_patients_database(
@@ -3431,7 +3431,7 @@ async def import_patients_database(
         else:
             raise HTTPException(
                 status_code=400,
-                detail="Неподдерживаемый формат файла. Используйте .db, .sql или .json"
+                detail="Unsupported file format. Use .db, .sql or .json"
             )
         
         # Читаем содержимое файла
@@ -3464,11 +3464,11 @@ async def import_patients_database(
                     # Восстанавливаем из бэкапа при ошибке
                     if backup_path and backup_path.exists():
                         shutil.copy2(str(backup_path), str(db_path))
-                    raise HTTPException(status_code=400, detail=f"Невалидная база данных: {str(e)}")
+                    raise HTTPException(status_code=400, detail=f"Invalid database: {str(e)}")
                 
                 return {
                     "status": "success",
-                    "message": f"База данных заменена. Пациентов: {patients_count}, Документов: {docs_count}",
+                    "message": f"Database replaced. Patients: {patients_count}, Documents: {docs_count}",
                     "patients_count": patients_count,
                     "documents_count": docs_count,
                     "backup_created": backup_path.exists() if backup_path else False
@@ -3476,7 +3476,7 @@ async def import_patients_database(
             else:
                 raise HTTPException(
                     status_code=400,
-                    detail="Для SQLite файлов доступен только режим 'replace'. Используйте mode=replace"
+                    detail="For SQLite files only 'replace' mode is available. Use mode=replace"
                 )
         
         elif format_type == "sql":
@@ -3487,7 +3487,7 @@ async def import_patients_database(
             if "BEGIN TRANSACTION" not in sql_content:
                 raise HTTPException(
                     status_code=400,
-                    detail="SQL файл должен содержать BEGIN TRANSACTION"
+                    detail="SQL file must contain BEGIN TRANSACTION"
                 )
             
             conn = sqlite3.connect(str(db_path))
@@ -3521,20 +3521,20 @@ async def import_patients_database(
             except Exception as e:
                 conn.rollback()
                 conn.close()
-                raise HTTPException(status_code=400, detail=f"Ошибка выполнения SQL: {str(e)}")
+                raise HTTPException(status_code=400, detail=f"Error executing SQL: {str(e)}")
         
         elif format_type == "json":
             # Импорт JSON файла
             try:
                 import_data = json.loads(content.decode('utf-8'))
             except json.JSONDecodeError as e:
-                raise HTTPException(status_code=400, detail=f"Невалидный JSON: {str(e)}")
+                raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
             
             # Проверяем структуру
             if 'patients_with_documents' not in import_data and 'patients' not in import_data:
                 raise HTTPException(
                     status_code=400,
-                    detail="JSON должен содержать 'patients' или 'patients_with_documents'"
+                    detail="JSON must contain 'patients' or 'patients_with_documents'"
                 )
             
             # Используем patients_with_documents если есть, иначе patients
@@ -3644,13 +3644,13 @@ async def import_patients_database(
             except Exception as e:
                 conn.rollback()
                 conn.close()
-                raise HTTPException(status_code=400, detail=f"Ошибка импорта JSON: {str(e)}")
+                raise HTTPException(status_code=400, detail=f"Error importing JSON: {str(e)}")
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Ошибка импорта базы данных: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Ошибка импорта базы данных: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error importing database: {str(e)}")
 
 @app.delete("/patients/{patient_id}")
 async def delete_patient(patient_id: int):
@@ -3662,10 +3662,10 @@ async def delete_patient(patient_id: int):
         if success:
             return {"status": "success", "message": f"Пациент {patient_id} удален"}
         else:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка удаления пациента: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error deleting patient: {str(e)}")
 
 @app.post("/patients/{patient_id}/documents", response_model=DocumentResponse)
 async def add_document_to_patient(patient_id: int, document: DocumentRequest):
@@ -3676,7 +3676,7 @@ async def add_document_to_patient(patient_id: int, document: DocumentRequest):
         # Проверяем существование пациента
         patient = db.get_patient(patient_id)
         if not patient:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
         
         document_id = db.add_document(
             patient_id=patient_id,
@@ -3692,10 +3692,10 @@ async def add_document_to_patient(patient_id: int, document: DocumentRequest):
         if created_document:
             return DocumentResponse(**created_document)
         else:
-            raise HTTPException(status_code=400, detail="Ошибка создания документа")
+            raise HTTPException(status_code=400, detail="Error creating document")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка добавления документа: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error adding document: {str(e)}")
 
 @app.post("/patients/{patient_id}/vision-llm")
 async def add_vision_llm_document(
@@ -3710,7 +3710,7 @@ async def add_vision_llm_document(
         db = get_patients_database()
         patient = db.get_patient(patient_id)
         if not patient:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
 
         try:
             from pdf2image import convert_from_path
@@ -3823,7 +3823,7 @@ async def add_vision_llm_document(
         detail = str(e)
         if len(detail) > 400:
             detail = detail[:400] + "..."
-        raise HTTPException(status_code=400, detail=f"Ошибка Vision-LLM: {detail}")
+        raise HTTPException(status_code=400, detail=f"Error Vision-LLM: {detail}")
 
 @app.get("/patients/{patient_id}/documents", response_model=List[DocumentResponse])
 async def get_patient_documents(patient_id: int):
@@ -3834,13 +3834,13 @@ async def get_patient_documents(patient_id: int):
         # Проверяем существование пациента
         patient = db.get_patient(patient_id)
         if not patient:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
         
         documents = db.get_patient_documents(patient_id)
         return [DocumentResponse(**doc) for doc in documents]
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения документов: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting documents: {str(e)}")
 
 @app.get("/patients/{patient_id}/full", response_model=Dict[str, Any])
 async def get_patient_full_info(patient_id: int):
@@ -3851,7 +3851,7 @@ async def get_patient_full_info(patient_id: int):
         # Получаем основную информацию о пациенте
         patient = db.get_patient(patient_id)
         if not patient:
-            raise HTTPException(status_code=404, detail="Пациент не найден")
+            raise HTTPException(status_code=404, detail="Patient not found")
         
         # Получаем документы пациента
         documents = db.get_patient_documents(patient_id)
@@ -3865,13 +3865,13 @@ async def get_patient_full_info(patient_id: int):
         return full_info
         
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка получения полной информации о пациенте: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error getting full patient info: {str(e)}")
 
 @app.post("/patients/batch-query", response_model=BatchPatientQueryResponse)
 async def batch_query_patients(request: BatchPatientQueryRequest):
     """Batch LLM query for all patients."""
     if not request.query or not request.query.strip():
-        raise HTTPException(status_code=400, detail="Запрос не может быть пустым")
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
 
     db = get_patients_database()
     results: List[BatchPatientQueryResult] = []
@@ -3926,7 +3926,7 @@ async def batch_query_patients(request: BatchPatientQueryRequest):
                 logger.info(f"✅ MemoRAG контекст получен: длина={len(memorag_context)} символов")
                 logger.info(f"   Первые 500 символов: {memorag_context[:500]}...")
                 # Проверяем наличие ключевых элементов в контексте
-                if "🔍 ПОДСКАЗКИ MEMORAG" in memorag_context:
+                if "🔍" in memorag_context and "MEMORAG" in memorag_context:
                     logger.info(f"   ✓ Подсказки MemoRAG присутствуют в контексте")
                 if "💾 КОНТЕКСТ ИЗ ПАМЯТИ" in memorag_context:
                     logger.info(f"   ✓ Контекст из памяти присутствует в контексте")
@@ -3992,7 +3992,7 @@ async def batch_query_patients(request: BatchPatientQueryRequest):
                 logger.info(f"✅ MemoRAG контекст для пациента {patient.get('id', 0)}: длина={len(memorag_context)} символов")
                 logger.info(f"   Первые 500 символов: {memorag_context[:500]}...")
                 # Проверяем наличие подсказок в контексте
-                if "🔍 ПОДСКАЗКИ MEMORAG" in memorag_context:
+                if "🔍" in memorag_context and "MEMORAG" in memorag_context:
                     logger.info(f"   ✓ Подсказки MemoRAG найдены в контексте")
                 else:
                     logger.warning(f"   ⚠ Подсказки MemoRAG НЕ найдены в контексте!")
@@ -4005,8 +4005,8 @@ async def batch_query_patients(request: BatchPatientQueryRequest):
             # Логируем все сообщения перед отправкой в create_chat_completion
             logger.info(f"📋 Все сообщения для пациента {patient.get('id', 0)} перед отправкой в create_chat_completion:")
             for idx, msg in enumerate(messages):
-                has_memorag = "MEMORAG" in msg.content.upper() or "ПОДСКАЗКИ" in msg.content or "ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ" in msg.content
-                has_patient = "ДАННЫЕ ПАЦИЕНТА" in msg.content.upper() or "ПАЦИЕНТ:" in msg.content.upper()
+                has_memorag = "MEMORAG" in msg.content.upper() or "CLUES" in msg.content or "KNOWLEDGE BASE FRAGMENTS" in msg.content
+                has_patient = "PATIENT DATA" in msg.content.upper() or "PATIENT:" in msg.content.upper()
                 logger.info(f"   Сообщение {idx}: role={msg.role}, длина={len(msg.content)} символов, has_memorag={has_memorag}, has_patient={has_patient}")
                 if has_memorag:
                     logger.info(f"      ✓ MemoRAG контекст обнаружен в сообщении {idx}!")
@@ -4269,10 +4269,10 @@ async def delete_document(document_id: int):
         if success:
             return {"status": "success", "message": f"Документ {document_id} удален"}
         else:
-            raise HTTPException(status_code=404, detail="Документ не найден")
+            raise HTTPException(status_code=404, detail="Document not found")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка удаления документа: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error deleting document: {str(e)}")
 
 # OCR эндпоинты
 @app.post("/ocr/extract-text")
@@ -4281,7 +4281,7 @@ async def extract_text_from_image(file: UploadFile = File(...)):
     try:
         # Проверяем, что файл является изображением
         if not file.content_type or not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="Файл должен быть изображением")
+            raise HTTPException(status_code=400, detail="File must be an image")
         
         # Читаем данные файла
         image_data = await file.read()
@@ -4297,12 +4297,12 @@ async def extract_text_from_image(file: UploadFile = File(...)):
                 "confidence": result.get("confidence", 0.0)
             }
         else:
-            raise HTTPException(status_code=400, detail=f"Ошибка OCR: {result['error']}")
+            raise HTTPException(status_code=400, detail=f"Error OCR: {result['error']}")
             
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка обработки изображения: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.get("/ocr/status")
 async def get_ocr_status():
@@ -4333,7 +4333,7 @@ async def test_ocr():
         if not processor.is_tesseract_available():
             return {
                 "status": "error",
-                "message": "Tesseract не доступен"
+                "message": "Tesseract not available"
             }
         
         # Создаем простое тестовое изображение с текстом
@@ -4370,7 +4370,7 @@ async def test_ocr():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Ошибка тестирования OCR: {str(e)}"
+            "message": f"OCR test error: {str(e)}"
         }
 
 if __name__ == "__main__":

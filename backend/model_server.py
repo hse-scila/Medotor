@@ -17,20 +17,20 @@ TORCHLAMA_ENV_AVAILABLE = False
 try:
     if 'CONDA_DEFAULT_ENV' in os.environ and 'torchlama' in os.environ['CONDA_DEFAULT_ENV'].lower():
         TORCHLAMA_ENV_AVAILABLE = True
-        print("[OK] Окружение TorchLama активно")
+        print("[OK] TorchLama environment active")
     else:
-        print("[WARNING] Окружение TorchLama не активно")
+        print("[WARNING] TorchLama environment not active")
 except Exception as e:
-    print(f"[WARNING] Не удалось определить окружение: {e}")
+    print(f"[WARNING] Could not determine environment: {e}")
 
 # Import libraries
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM
     TRANSFORMERS_AVAILABLE = True
-    print("[OK] Transformers импортирован успешно")
+    print("[OK] Transformers imported successfully")
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    print("[WARNING] Transformers не найден")
+    print("[WARNING] Transformers not found")
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -48,27 +48,27 @@ class ModelManager:
         self.transformers_available = TRANSFORMERS_AVAILABLE
         
         if not self.transformers_available:
-            logger.error("Transformers не доступен! Установите: pip install transformers")
+            logger.error("Transformers not available! Install: pip install transformers")
         
     def load_model(self, model_name: str, model_path: Optional[str] = None):
         """Loads model into memory"""
         try:
-            logger.info(f"Начинаем загрузку модели: {model_name}")
-            logger.info(f"Устройство: {self.device}")
-            logger.info(f"Transformers доступен: {self.transformers_available}")
-            logger.info(f"Окружение TorchLama: {self.use_torchlama_env}")
+            logger.info(f"Starting model load: {model_name}")
+            logger.info(f"Device: {self.device}")
+            logger.info(f"Transformers available: {self.transformers_available}")
+            logger.info(f"TorchLama environment: {self.use_torchlama_env}")
             
             if not self.transformers_available:
-                logger.error("Transformers не доступен!")
+                logger.error("Transformers not available!")
                 return False
             
             # Use Transformers (TorchLama environment optimizes PyTorch)
             result = self._load_transformers_model(model_name, model_path)
-            logger.info(f"Результат загрузки модели {model_name}: {result}")
+            logger.info(f"Model load result {model_name}: {result}")
             return result
                 
         except Exception as e:
-            logger.error(f"Критическая ошибка загрузки модели {model_name}: {str(e)}")
+            logger.error(f"Critical model load error {model_name}: {str(e)}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return False
@@ -77,9 +77,9 @@ class ModelManager:
         """Load model via Transformers in TorchLama environment"""
         try:
             if self.use_torchlama_env:
-                logger.info("Используем Transformers в окружении TorchLama (оптимизированное)")
+                logger.info("Using Transformers in TorchLama environment (optimized)")
             else:
-                logger.info("Используем Transformers в стандартном окружении")
+                logger.info("Using Transformers in standard environment")
             
             if model_path:
                 # Load local model
@@ -108,12 +108,12 @@ class ModelManager:
                 "tokenizer": tokenizer
             }
             
-            env_info = "TorchLama" if self.use_torchlama_env else "стандартное"
-            logger.info(f"Модель {model_name} успешно загружена в окружении {env_info} на {self.device}")
+            env_info = "TorchLama" if self.use_torchlama_env else "standard"
+            logger.info(f"Model {model_name} loaded successfully in {env_info} on {self.device}")
             return True
             
         except Exception as e:
-            logger.error(f"Ошибка загрузки через Transformers: {str(e)}")
+            logger.error(f"Transformers load error: {str(e)}")
             return False
     
     def generate_text(
@@ -127,15 +127,15 @@ class ModelManager:
         """Generates text based on prompt"""
         
         if not self.current_model or not self.current_tokenizer:
-            return "Ошибка: модель не загружена"
+            return "Error: model not loaded"
         
         try:
             # Generate via Transformers (in TorchLama or standard environment)
             return self._generate_transformers(prompt, max_tokens, temperature, top_p, top_k)
                 
         except Exception as e:
-            logger.error(f"Ошибка генерации текста: {str(e)}")
-            return f"Ошибка генерации: {str(e)}"
+            logger.error(f"Text generation error: {str(e)}")
+            return f"Generation error: {str(e)}"
     
     def generate_text_stream(
         self, 
@@ -148,7 +148,7 @@ class ModelManager:
         """Simple streaming generation emulation"""
         
         if not self.current_model or not self.current_tokenizer:
-            yield "Ошибка: модель не загружена"
+            yield "Error: model not loaded"
             return
         
         try:
@@ -156,7 +156,7 @@ class ModelManager:
             full_text = self.generate_text(prompt, max_tokens, temperature, top_p, top_k)
             
             if not full_text or not full_text.strip():
-                yield "Модель не смогла сгенерировать ответ"
+                yield "Model failed to generate response"
                 return
             
             # Split into words for streaming emulation
@@ -168,8 +168,8 @@ class ModelManager:
                     yield " " + word
                     
         except Exception as e:
-            logger.error(f"Ошибка потоковой генерации текста: {str(e)}")
-            yield f"Ошибка генерации: {str(e)}"
+            logger.error(f"Streaming text generation error: {str(e)}")
+            yield f"Generation error: {str(e)}"
     
     def _generate_transformers(self, prompt: str, max_tokens: int, temperature: float, top_p: float, top_k: int) -> str:
         """Generate text via Transformers"""
@@ -201,8 +201,8 @@ class ModelManager:
             return generated_text
             
         except Exception as e:
-            logger.error(f"Ошибка генерации через Transformers: {str(e)}")
-            return f"Ошибка генерации: {str(e)}"
+            logger.error(f"Transformers generation error: {str(e)}")
+            return f"Generation error: {str(e)}"
     
     def _generate_transformers_stream(self, prompt: str, max_tokens: int, temperature: float, top_p: float, top_k: int):
         """Streaming text generation via Transformers"""
@@ -250,8 +250,8 @@ class ModelManager:
                         break
             
         except Exception as e:
-            logger.error(f"Ошибка потоковой генерации через Transformers: {str(e)}")
-            yield f"Ошибка генерации: {str(e)}"
+            logger.error(f"Transformers streaming generation error: {str(e)}")
+            yield f"Generation error: {str(e)}"
     
     def get_model_info(self) -> Dict[str, Any]:
         """Returns information about current model"""
@@ -285,7 +285,7 @@ model_manager = ModelManager()
 
 # Ollama models (local) - only actually available
 OLLAMA_MODELS = {
-    "qwen2.5:latest": "Qwen 2.5 Latest - Ollama (рекомендуемая)",
+    "qwen2.5:latest": "Qwen 2.5 Latest - Ollama (recommended)",
     "llama3.2:latest": "Llama 3.2 Latest - Ollama",
     "llama3.2:1b": "Llama 3.2 1B - Ollama",
     "gemma3:1b": "Gemma 3 1B - Ollama",
@@ -309,9 +309,9 @@ OLLAMA_MODELS = {
 
 # Fallback models for Transformers
 TRANSFORMERS_MODELS = {
-    "microsoft/DialoGPT-small": "Диалоговая модель (117M параметров)",
-    "distilgpt2": "GPT-2 Distil (82M параметров)",
-    "gpt2": "GPT-2 (124M параметров)"
+    "microsoft/DialoGPT-small": "Dialogue model (117M params)",
+    "distilgpt2": "GPT-2 Distil (82M params)",
+    "gpt2": "GPT-2 (124M params)"
 }
 
 def get_available_models() -> Dict[str, str]:
@@ -327,7 +327,7 @@ async def get_real_ollama_models() -> Dict[str, str]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(f"{config.ollama.url}/api/tags")
             if response.status_code != 200:
-                logger.error(f"Не удалось подключиться к Ollama: {response.status_code}")
+                logger.error(f"Could not connect to Ollama: {response.status_code}")
                 return {}
             
             models = response.json().get("models", [])
@@ -340,11 +340,11 @@ async def get_real_ollama_models() -> Dict[str, str]:
                 description = OLLAMA_MODELS.get(model_name, f"Local Ollama model: {model_name}")
                 available_models[model_name] = description
             
-            logger.info(f"Найдено {len(available_models)} локально установленных моделей Ollama")
+            logger.info(f"Found {len(available_models)} locally installed Ollama models")
             return available_models
             
     except Exception as e:
-        logger.error(f"Ошибка при получении списка моделей Ollama: {e}")
+        logger.error(f"Error getting Ollama model list: {e}")
         return {}
 
 async def load_preset_model(model_name: str) -> bool:
@@ -352,8 +352,8 @@ async def load_preset_model(model_name: str) -> bool:
     # Check that model is locally installed
     local_models = await get_real_ollama_models()
     if model_name not in local_models:
-        logger.error(f"Модель {model_name} не найдена среди локально установленных моделей")
-        logger.info(f"Локально установленные модели: {list(local_models.keys())}")
+        logger.error(f"Model {model_name} not found among locally installed models")
+        logger.info(f"Locally installed models: {list(local_models.keys())}")
         return False
     
     # For Ollama models perform real loading via API
@@ -366,15 +366,15 @@ async def load_preset_model(model_name: str) -> bool:
             # Check that model is available
             response = await client.get(f"{config.ollama.url}/api/tags")
             if response.status_code != 200:
-                logger.error(f"Не удалось подключиться к Ollama: {response.status_code}")
+                logger.error(f"Could not connect to Ollama: {response.status_code}")
                 return False
             
             models = response.json().get("models", [])
             available_models = [model["name"] for model in models]
             
             if model_name not in available_models:
-                logger.error(f"Модель {model_name} не найдена в Ollama")
-                logger.info(f"Доступные модели в Ollama: {available_models}")
+                logger.error(f"Model {model_name} not found in Ollama")
+                logger.info(f"Available Ollama models: {available_models}")
                 return False
             
             # Load model (make request for "warming up")
@@ -388,7 +388,7 @@ async def load_preset_model(model_name: str) -> bool:
                     timeout=300.0  # Extended timeout for loading
                 )
                 if pull_response.status_code == 200:
-                    logger.info(f"Модель {model_name} загружена из репозитория")
+                    logger.info(f"Model {model_name} loaded from repository")
             except Exception as e:
                 logger.info(f"Model {model_name} is already available locally or loading error: {e}")
             
@@ -407,21 +407,21 @@ async def load_preset_model(model_name: str) -> bool:
             )
             
             if load_response.status_code == 200:
-                logger.info(f"Модель {model_name} успешно загружена в Ollama")
+                logger.info(f"Model {model_name} successfully loaded in Ollama")
                 return True
             else:
-                logger.error(f"Ошибка загрузки модели {model_name}: {load_response.status_code}")
+                logger.error(f"Model load error {model_name}: {load_response.status_code}")
                 return False
         
     except Exception as e:
-        logger.error(f"Ошибка при загрузке модели {model_name}: {e}")
+        logger.error(f"Error loading model {model_name}: {e}")
         return False
 
 if __name__ == "__main__":
     # Testing
     print("ModelManager initialization...")
-    print(f"Окружение TorchLama активно: {TORCHLAMA_ENV_AVAILABLE}")
-    print(f"Transformers доступен: {TRANSFORMERS_AVAILABLE}")
+    print(f"TorchLama environment active: {TORCHLAMA_ENV_AVAILABLE}")
+    print(f"Transformers available: {TRANSFORMERS_AVAILABLE}")
     
     available_models = get_available_models()
     print(f"Available models: {list(available_models.keys())}")
@@ -440,4 +440,4 @@ if __name__ == "__main__":
         info = model_manager.get_model_info()
         print(f"Model information: {info}")
     else:
-        print("Ошибка загрузки модели")
+        print("Model load error")

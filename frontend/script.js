@@ -1,21 +1,21 @@
-// LM Studio Clone - JavaScript для интерфейса
+// LM Studio Clone - JavaScript for UI
 
 class LMStudioClone {
     constructor() {
         this.apiBaseUrl = 'http://localhost:8000';
         this.currentModel = null;
         this.isConnected = false;
-        this.isDarkTheme = false; // По умолчанию светлая тема
+        this.isDarkTheme = false; // Default light theme
         this.ollamaUrl = 'http://127.0.0.1:11434';
         this.isOllamaConnected = false;
         this.ollamaModelsLoaded = false;
-        this.checkingOllamaStatus = false; // Флаг для предотвращения множественных одновременных проверок
+        this.checkingOllamaStatus = false; // Prevent multiple simultaneous checks
         this.isStreaming = false;
         this.currentEventSource = null;
-        this.chatHistory = []; // История сообщений для контекста
+        this.chatHistory = []; // Message history for context
         this.chatScrollContainer = null; // ⥪ ஫ ப ஫ 
-        this.isEmbeddingInProgress = false; // Флаг процесса создания эмбеддингов
-        this.shouldStopEmbedding = false; // Флаг для остановки процесса
+        this.isEmbeddingInProgress = false; // Embedding in progress flag
+        this.shouldStopEmbedding = false; // Stop embedding flag
         
         this.initializeElements();
         this.setupEventListeners();
@@ -24,54 +24,54 @@ class LMStudioClone {
         this.checkConnection();
         this.loadAvailableModels();
         
-        // Загружаем статистику MemoRAG при инициализации
+        // Load MemoRAG stats on init
         setTimeout(async () => {
             this.updateMemoRagStats();
             this.checkMigrationStatus();
             this.checkOCRStatus();
             this.loadPatientsForChat();
-            this.loadPatientsList(); // Загружаем список пациентов для управления документами
-            // Проверку Ollama делаем отдельно с задержкой, чтобы не блокировать загрузку
+            this.loadPatientsList(); // Load patient list for document management
+            // Check Ollama separately with delay so it doesn't block load
             await this.checkOllamaStatus();
             
-            // Если Ollama подключен, но модели не загружены, загружаем их принудительно
+            // If Ollama connected but models not loaded, force load them
             if (this.isOllamaConnected && !this.ollamaModelsLoaded) {
-                console.log('DEBUG: Ollama подключен, но модели не загружены, загружаем принудительно...');
+                console.log('DEBUG: Ollama connected but models not loaded, loading...');
                 await this.loadOllamaModels();
             }
             
-            // Финальная проверка: если модели все еще не загружены, пробуем еще раз
+            // Final check: if models still not loaded, try again
             if (this.isOllamaConnected && !this.ollamaModelsLoaded) {
-                console.warn('DEBUG: Модели Ollama все еще не загружены после проверки, пробуем еще раз...');
+                console.warn('DEBUG: Ollama models still not loaded after check, retrying...');
                 setTimeout(async () => {
                     await this.loadOllamaModels();
                 }, 2000);
             }
         }, 1000);
         
-        // Дополнительная проверка через 3 секунды после загрузки (на случай, если первая проверка не сработала)
+        // Extra check 3 seconds after load (in case first check didn't run)
         setTimeout(async () => {
             if (this.isOllamaConnected && !this.ollamaModelsLoaded) {
-                console.log('DEBUG: Дополнительная проверка: загружаем модели Ollama...');
+                console.log('DEBUG: Extra check: loading Ollama models...');
                 await this.loadOllamaModels();
                 
-                // Проверяем результат
+                // Check result
                 if (this.modelSelect) {
                     const ollamaModelsCount = Array.from(this.modelSelect.options).filter(
                         opt => opt.value.startsWith('ollama:')
                     ).length;
-                    console.log(`DEBUG: После дополнительной проверки: найдено ${ollamaModelsCount} моделей Ollama в списке`);
+                    console.log(`DEBUG: After extra check: ${ollamaModelsCount} Ollama models in list`);
                     
                     if (ollamaModelsCount === 0 && this.isOllamaConnected) {
-                        console.error('DEBUG: КРИТИЧНО: Ollama подключен, но модели не загружены в список!');
-                        this.logToConsole('⚠️ Модели Ollama не загружены в список. Попробуйте обновить страницу.', 'warning');
+                        console.error('DEBUG: CRITICAL: Ollama connected but models not in list!');
+                        this.logToConsole('⚠️ Ollama models not loaded in list. Try refreshing the page.', 'warning');
                     }
                 }
             }
         }, 3000);
     }
 
-    // Универсальная функция для fetch с таймаутом
+    // Generic fetch with timeout
     async fetchWithTimeout(url, options = {}, timeout = 10000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -86,21 +86,21 @@ class LMStudioClone {
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
-                throw new Error(`Таймаут запроса к ${url} (${timeout}ms)`);
+                throw new Error(`Request timeout to ${url} (${timeout}ms)`);
             }
             throw error;
         }
     }
 
     initializeElements() {
-        // Основные элементы
+        // Main elements
         this.modelSelect = document.getElementById('modelSelect');
         this.loadModelBtn = document.getElementById('loadModelBtn');
         this.statusIndicator = document.getElementById('statusIndicator');
         this.modelInfo = document.getElementById('modelInfo');
         this.console = document.getElementById('console');
         
-        // Настройки
+        // Settings
         this.temperature = document.getElementById('temperature');
         this.temperatureValue = document.getElementById('temperatureValue');
         this.maxTokens = document.getElementById('maxTokens');
@@ -108,7 +108,7 @@ class LMStudioClone {
         this.topPValue = document.getElementById('topPValue');
         this.topK = document.getElementById('topK');
         
-        // Чат
+        // Chat
         this.chatMessages = document.getElementById('chatMessages');
         if (!this.chatMessages) {
             const unified = document.querySelector('.unified-chat-window');
@@ -134,7 +134,7 @@ class LMStudioClone {
         this.chatInput = document.getElementById('chatInput');
         this.sendBtn = document.getElementById('sendBtn');
         
-        // Настройки чата с пациентами
+        // Chat settings with patients
         this.chatPatientSelect = document.getElementById('chatPatientSelect');
         this.usePatientData = document.getElementById('usePatientData');
         this.clearChatHistoryBtn = document.getElementById('clearChatHistoryBtn');
@@ -146,7 +146,7 @@ class LMStudioClone {
         this.promptPreviewText = document.getElementById('promptPreviewText');
         this.copyPromptPreviewBtn = document.getElementById('copyPromptPreviewBtn');
         
-        // Автоматический анализ пациентов
+        // Automatic patient analysis
         this.patientAnalysisQuestions = document.getElementById('patientAnalysisQuestions');
         this.patientAnalysisUseMemoRag = document.getElementById('patientAnalysisUseMemoRag');
         this.patientAnalysisPercent = document.getElementById('patientAnalysisPercent');
@@ -163,26 +163,26 @@ class LMStudioClone {
         this.lastPatientAnalysisResults = null;
         this.patientAnalysisTotal = 0;
         this.patientAnalysisCurrent = 0;
-        this.allPatientsList = []; // Список всех пациентов для выборки
-        this.accumulatedResults = []; // Накопленные результаты для автосохранения
-        this.autoSaveInterval = null; // Таймер автосохранения
-        this.autoSaveEnabled = true; // Включено ли автосохранение
-        this.autoSaveIntervalMs = 30000; // Интервал автосохранения (30 секунд)
-        this.analysisStartTime = null; // Время начала анализа (для имени файла)
-        this.autoSaveFileName = null; // Имя файла для автосохранения
-        this.autoSaveFileHandle = null; // File handle для File System Access API
-        this.savedPatientIds = new Set(); // ID пациентов, которые уже были сохранены
+        this.allPatientsList = []; // All patients for selection
+        this.accumulatedResults = []; // Accumulated results for auto-save
+        this.autoSaveInterval = null; // Auto-save timer
+        this.autoSaveEnabled = true; // Auto-save enabled
+        this.autoSaveIntervalMs = 30000; // Auto-save interval (30 seconds)
+        this.analysisStartTime = null; // Analysis start time (for filename)
+        this.autoSaveFileName = null; // Auto-save filename
+        this.autoSaveFileHandle = null; // File handle for File System Access API
+        this.savedPatientIds = new Set(); // IDs of patients already saved
         
-        // API тест
+        // API test
         this.apiTestInput = document.getElementById('apiTestInput');
         this.testApiBtn = document.getElementById('testApiBtn');
         this.apiTestResult = document.getElementById('apiTestResult');
         
-        // Вкладки
+        // Tabs
         this.tabs = document.querySelectorAll('.tab');
         this.tabPanels = document.querySelectorAll('.tab-panel');
         
-        // Тема
+        // Theme
         this.themeToggle = document.getElementById('themeToggle');
         
         // Ollama
@@ -194,13 +194,13 @@ class LMStudioClone {
         this.modelInfoBtn = document.getElementById('modelInfoBtn');
         this.removeModelBtn = document.getElementById('removeModelBtn');
         
-        // Системный промпт
+        // System prompt
         this.systemPrompt = document.getElementById('systemPrompt');
         this.saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
         this.clearSystemPromptBtn = document.getElementById('clearSystemPromptBtn');
         this.useSystemPrompt = document.getElementById('useSystemPrompt');
         
-        // RAG элементы
+        // RAG elements
         this.ragVectorStore = document.getElementById('ragVectorStore');
         this.useOllamaEmbeddings = document.getElementById('useOllamaEmbeddings');
         this.ollamaEmbeddingGroup = document.getElementById('ollamaEmbeddingGroup');
@@ -214,7 +214,7 @@ class LMStudioClone {
         this.ragChunkCount = document.getElementById('ragChunkCount');
         this.ragLastUpload = document.getElementById('ragLastUpload');
         
-        // Элементы статистики RAG
+        // RAG stats elements
         this.ragStatusValue = document.getElementById('ragStatusValue');
         this.ragVectorStoreType = document.getElementById('ragVectorStoreType');
         this.ragDimension = document.getElementById('ragDimension');
@@ -229,12 +229,12 @@ class LMStudioClone {
         this.ragDocuments = document.getElementById('ragDocuments');
         this.addDocumentsBtn = document.getElementById('addDocumentsBtn');
         
-        // Настройки разбиения файлов
+        // File chunking settings
         this.enableFileChunking = document.getElementById('enableFileChunking');
         this.chunkingSettings = document.getElementById('chunkingSettings');
         this.chunkSize = document.getElementById('chunkSize');
         
-        // Элементы прогресса
+        // Progress elements
         this.uploadProgress = document.getElementById('uploadProgress');
         this.progressTitle = document.getElementById('progressTitle');
         this.progressPercent = document.getElementById('progressPercent');
@@ -250,20 +250,20 @@ class LMStudioClone {
         this.resetRagBtn = document.getElementById('resetRagBtn');
         this.useRagInChat = document.getElementById('useRagInChat');
         
-        // RAG логи
+        // RAG logs
         this.refreshLogsBtn = document.getElementById('refreshLogsBtn');
         this.clearLogsBtn = document.getElementById('clearLogsBtn');
         this.logLevelFilter = document.getElementById('logLevelFilter');
         this.logStats = document.getElementById('logStats');
         this.logEntries = document.getElementById('logEntries');
         
-        // MemoRAG элементы
+        // MemoRAG elements
         this.useMemoRag = document.getElementById('useMemoRag');
         this.memoragChunksCount = document.getElementById('memoragChunksCount');
         this.memoragMemorySize = document.getElementById('memoragMemorySize');
         this.refreshMemoRagStatsBtn = document.getElementById('refreshMemoRagStatsBtn');
         
-        // MemoRAG статистика
+        // MemoRAG stats
         this.memoragTotalEntries = document.getElementById('memoragTotalEntries');
         this.memoragFacts = document.getElementById('memoragFacts');
         this.memoragConcepts = document.getElementById('memoragConcepts');
@@ -273,13 +273,13 @@ class LMStudioClone {
         this.memoragCacheSize = document.getElementById('memoragCacheSize');
         this.memoragCompressionRatio = document.getElementById('memoragCompressionRatio');
         
-        // MemoRAG управление
+        // MemoRAG controls
         this.clearMemoRagMemoryBtn = document.getElementById('clearMemoRagMemoryBtn');
         this.exportMemoRagMemoryBtn = document.getElementById('exportMemoRagMemoryBtn');
         this.migrateToMemoRagBtn = document.getElementById('migrateToMemoRagBtn');
         this.checkMigrationStatusBtn = document.getElementById('checkMigrationStatusBtn');
         
-        // MemoRAG тестирование
+        // MemoRAG testing
         this.memoragTestQuery = document.getElementById('memoragTestQuery');
         this.memoragTestTopK = document.getElementById('memoragTestTopK');
         this.memoragContextLength = document.getElementById('memoragContextLength');
@@ -287,7 +287,7 @@ class LMStudioClone {
         this.memoragTestResults = document.getElementById('memoragTestResults');
         this.memoragTestOutput = document.getElementById('memoragTestOutput');
         
-        // Пациенты элементы
+        // Patients elements
         this.patientsCount = document.getElementById('patientsCount');
         this.documentsCount = document.getElementById('documentsCount');
         this.patientsDbStatus = document.getElementById('patientsDbStatus');
@@ -321,7 +321,7 @@ class LMStudioClone {
         this.batchQueryProgressText = document.getElementById('batchQueryProgressText');
         this.batchQuerySummary = document.getElementById('batchQuerySummary');
         
-        // Элементы массового импорта
+        // Bulk import elements
         this.massImportFolder = document.getElementById('massImportFolder');
         this.selectFolderBtn = document.getElementById('selectFolderBtn');
         this.selectedFolderPath = document.getElementById('selectedFolderPath');
@@ -334,8 +334,8 @@ class LMStudioClone {
         this.progressBarFill = document.getElementById('progressBarFill');
         this.progressDetails = document.getElementById('progressDetails');
         
-        // Отладочные сообщения для элементов управления документами
-        console.log('DEBUG: Инициализация элементов управления документами:');
+        // Debug messages for document control elements
+        console.log('DEBUG: Initializing document control elements:');
         console.log('DEBUG: selectedPatient:', this.selectedPatient);
         console.log('DEBUG: documentType:', this.documentType);
         console.log('DEBUG: documentContent:', this.documentContent);
@@ -344,38 +344,38 @@ class LMStudioClone {
         console.log('DEBUG: visionLlmBtn:', this.visionLlmBtn);
         console.log('DEBUG: visionLlmProgress:', this.visionLlmProgress);
         
-        // Проверяем, что все элементы найдены
+        // Ensure all elements are found
         if (!this.selectedPatient) {
-            console.error('ERROR: selectedPatient не найден!');
+            console.error('ERROR: selectedPatient not found!');
         }
         if (!this.documentType) {
-            console.error('ERROR: documentType не найден!');
+            console.error('ERROR: documentType not found!');
         }
         if (!this.documentContent) {
-            console.error('ERROR: documentContent не найден!');
+            console.error('ERROR: documentContent not found!');
         }
         if (!this.addDocumentBtn) {
-            console.error('ERROR: addDocumentBtn не найден!');
+            console.error('ERROR: addDocumentBtn not found!');
         }
         if (!this.ocrDocumentBtn) {
-            console.error('ERROR: ocrDocumentBtn не найден!');
+            console.error('ERROR: ocrDocumentBtn not found!');
         }
         if (!this.visionLlmBtn) {
-            console.error('ERROR: visionLlmBtn не найден!');
+            console.error('ERROR: visionLlmBtn not found!');
         }
         this.patientsList = document.getElementById('patientsList');
         this.refreshPatientsBtn = document.getElementById('refreshPatientsBtn');
         this.clearPatientsDbBtn = document.getElementById('clearPatientsDbBtn');
         
-        // Потоковая генерация
+        // Streaming generation
         this.streamingIndicator = document.getElementById('streamingIndicator');
         
-        // WebSocket для прогресса
+        // WebSocket for progress
         this.websocket = null;
         this.wsPingInterval = null;
         this.connectWebSocket();
         
-        // Переменные для массового импорта
+        // Bulk import variables
         this.massImportData = {
             isRunning: false,
             isStopped: false,
@@ -388,7 +388,7 @@ class LMStudioClone {
             currentFile: null
         };
     }
-    // Показ полного промпта: из массива messages (role/content)
+    // Show full prompt: from messages array (role/content)
     showFullPromptPreview(messages) {
         try {
             const lines = [];
@@ -404,7 +404,7 @@ class LMStudioClone {
             if (this.promptPreviewContainer) {
                 this.promptPreviewContainer.style.display = 'block';
                 try { this.promptPreviewContainer.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_) {}
-                // краткая подсветка
+                // brief highlight
                 this.promptPreviewContainer.style.boxShadow = '0 0 0 3px rgba(255,200,0,0.6)';
                 setTimeout(() => { this.promptPreviewContainer.style.boxShadow = ''; }, 1200);
             }
@@ -412,7 +412,7 @@ class LMStudioClone {
         } catch (_) {}
     }
 
-    // Показ полного промпта: из готовой строки
+    // Show full prompt: from ready string
     showFullPromptPreviewFromText(text) {
         try {
             if (this.promptPreviewText) this.promptPreviewText.value = this.stripEmptyLines(text || '');
@@ -426,7 +426,7 @@ class LMStudioClone {
         } catch (_) {}
     }
 
-    // Нормализация текста промпта: убираем повтор пустых строк и декоративные линии
+    // Normalize prompt text: remove repeated empty lines and decorative lines
     normalizePromptText(text) {
         const unified = String(text || '').replace(/\r\n/g, '\n');
         const srcLines = unified.split('\n');
@@ -448,7 +448,7 @@ class LMStudioClone {
         return out.join('\n');
     }
 
-    // Удалить только пустые строки, остальное оставить как есть
+    // Remove only empty lines, leave the rest as is
     stripEmptyLines(text) {
         const unified = String(text || '').replace(/\r\n/g, '\n');
         const out = [];
@@ -459,30 +459,30 @@ class LMStudioClone {
         return out.join('\n');
     }
 
-    // Безопасное добавление обработчика событий (метод класса для использования везде)
+    // Safe addEventListener (class method for use everywhere)
     safeAddEventListener(element, event, handler) {
         if (!element) {
-            console.warn(`safeAddEventListener: элемент не найден для события ${event}`);
+            console.warn(`safeAddEventListener: element not found for event ${event}`);
             return;
         }
         if (typeof element.addEventListener !== 'function') {
-            console.warn(`safeAddEventListener: элемент не поддерживает addEventListener`, element);
+            console.warn(`safeAddEventListener: element does not support addEventListener`, element);
             return;
         }
         try {
             element.addEventListener(event, handler);
         } catch (error) {
-            console.error(`safeAddEventListener: ошибка при добавлении обработчика ${event}:`, error);
+            console.error(`safeAddEventListener: error adding handler ${event}:`, error);
         }
     }
 
     setupEventListeners() {
         try {
         
-        // Загрузка модели
+        // Model loading
         this.safeAddEventListener(this.loadModelBtn, 'click', () => this.loadSelectedModel());
         
-        // Настройки
+        // Settings
         if (this.temperature && this.temperatureValue) {
             this.safeAddEventListener(this.temperature, 'input', (e) => {
             this.temperatureValue.textContent = e.target.value;
@@ -495,7 +495,7 @@ class LMStudioClone {
         });
         }
         
-        // Чат
+        // Chat
         this.safeAddEventListener(this.sendBtn, 'click', () => this.sendMessage());
         this.safeAddEventListener(this.chatInput, 'keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -504,35 +504,35 @@ class LMStudioClone {
             }
         });
         
-        // API тест
+        // API test
         this.safeAddEventListener(this.testApiBtn, 'click', () => this.testApi());
         
-        // Вкладки
+        // Tabs
         if (this.tabs && this.tabs.length > 0) {
         this.tabs.forEach(tab => {
                 this.safeAddEventListener(tab, 'click', () => this.switchTab(tab.dataset.tab));
         });
         }
         
-        // Просмотр промпта
+        // View prompt
         if (this.viewPromptBtn) {
-            console.log('DEBUG: Подключение обработчика для viewPromptBtn');
+            console.log('DEBUG: Attaching handler for viewPromptBtn');
             this.safeAddEventListener(this.viewPromptBtn, 'click', (e) => {
                 e.preventDefault();
-                console.log('DEBUG: Клик по кнопке просмотра промпта');
+                console.log('DEBUG: Click on view prompt button');
                 this.showPromptPreview();
             });
         } else {
             console.error('ERROR: viewPromptBtn not found!');
         }
         
-        // Отслеживание изменения выбора пациента
+        // Track patient selection change
         if (this.chatPatientSelect) {
             this.safeAddEventListener(this.chatPatientSelect, 'change', () => {
                 const patientId = this.chatPatientSelect.value;
-                console.log('DEBUG: Изменение выбора пациента в чате:', patientId);
+                console.log('DEBUG: Patient selection change in chat:', patientId);
                 
-                // Сохраняем выбранного пациента в localStorage
+                // Save selected patient to localStorage
                 if (patientId) {
                     localStorage.setItem('lm-studio-selected-patient-id', patientId);
                     const selectedOption = this.chatPatientSelect.options[this.chatPatientSelect.selectedIndex];
@@ -545,7 +545,7 @@ class LMStudioClone {
             });
         }
         
-        // Кнопка копирования промпта из превью
+        // Copy prompt from preview button
         if (this.copyPromptPreviewBtn && this.promptPreviewText) {
             this.safeAddEventListener(this.copyPromptPreviewBtn, 'click', () => {
                 navigator.clipboard.writeText(this.promptPreviewText.value).then(() => {
@@ -563,7 +563,7 @@ class LMStudioClone {
             });
         }
         
-        // Тема
+        // Theme
         if (this.themeToggle) {
             this.safeAddEventListener(this.themeToggle, 'click', () => this.toggleTheme());
         } else {
@@ -575,7 +575,7 @@ class LMStudioClone {
         this.safeAddEventListener(this.modelInfoBtn, 'click', () => this.getOllamaModelInfo());
         this.safeAddEventListener(this.removeModelBtn, 'click', () => this.removeOllamaModel());
         
-        // Системный промпт
+        // System prompt
         this.safeAddEventListener(this.saveSystemPromptBtn, 'click', () => this.saveSystemPrompt());
         this.safeAddEventListener(this.clearSystemPromptBtn, 'click', () => this.clearSystemPrompt());
         this.safeAddEventListener(this.systemPrompt, 'input', () => this.autoSaveSystemPrompt());
@@ -585,9 +585,9 @@ class LMStudioClone {
             this.safeAddEventListener(this.useOllamaEmbeddings, 'change', () => this.toggleOllamaEmbeddings());
             this.useOllamaEmbeddings._ragBound = true;
         }
-        // RAG биндинги вынесены в ensureRagBindings()
+        // RAG bindings moved to ensureRagBindings()
         
-        // RAG логи
+        // RAG logs
         this.safeAddEventListener(this.refreshLogsBtn, 'click', () => this.refreshLogs());
         this.safeAddEventListener(this.clearLogsBtn, 'click', () => this.clearLogs());
         this.safeAddEventListener(this.logLevelFilter, 'change', () => this.refreshLogs());
@@ -600,24 +600,24 @@ class LMStudioClone {
         this.safeAddEventListener(this.checkMigrationStatusBtn, 'click', () => this.checkMigrationStatus());
         this.safeAddEventListener(this.testMemoRagBtn, 'click', () => this.testMemoRag());
         
-        // Пациенты обработчики
+        // Patients handlers
         this.safeAddEventListener(this.addPatientBtn, 'click', () => this.addPatient());
         this.safeAddEventListener(this.exportDatabaseBtn, 'click', () => this.exportDatabase());
         this.safeAddEventListener(this.importDatabaseBtn, 'click', () => this.importDatabaseFile?.click());
         this.safeAddEventListener(this.importDatabaseFile, 'change', (e) => this.handleDatabaseImport(e));
         this.safeAddEventListener(this.addDocumentBtn, 'click', () => {
-            console.log('DEBUG: Клик по кнопке addDocumentBtn');
+            console.log('DEBUG: Click on addDocumentBtn');
             
-            // Предотвращаем множественные клики
+            // Prevent multiple clicks
             if (this.addDocumentBtn && this.addDocumentBtn.disabled) {
-                console.log('DEBUG: Кнопка уже заблокирована, игнорируем клик');
+                console.log('DEBUG: Button already blocked, ignoring click');
                 return;
             }
             
             this.selectDocumentFile();
         });
         
-        // Обработчик для выбора файлов
+        // File selection handler
         if (this.documentFileInput) {
             this.safeAddEventListener(this.documentFileInput, 'change', (event) => {
                 this.handleDocumentFileSelection(event);
@@ -668,23 +668,23 @@ class LMStudioClone {
                 }
             });
         
-        // Обработчик для очистки истории чата
+        // Chat history clear handler
         this.safeAddEventListener(this.clearChatHistoryBtn, 'click', () => this.clearChatHistory());
         
-        // Обработчики для импорта/экспорта истории чата
+        // Chat history import/export handlers
         this.safeAddEventListener(this.exportChatHistoryBtn, 'click', () => this.exportChatHistory());
         this.safeAddEventListener(this.importChatHistoryBtn, 'click', () => this.importChatHistory());
         if (this.importChatHistoryInput) {
             this.safeAddEventListener(this.importChatHistoryInput, 'change', (e) => this.handleImportFile(e));
         }
         
-        // Обработчики для автоматического анализа пациентов
+        // Automatic patient analysis handlers
         this.safeAddEventListener(this.runPatientAnalysisBtn, 'click', () => this.runPatientAnalysis());
         this.safeAddEventListener(this.downloadPatientAnalysisBtn, 'click', () => this.downloadPatientAnalysisResults());
         this.safeAddEventListener(this.patientAnalysisPercent, 'input', () => this.updatePatientAnalysisCount());
         this.safeAddEventListener(this.patientAnalysisPercent, 'change', () => this.updatePatientAnalysisCount());
         
-        // Обработчики массового импорта
+        // Bulk import handlers
         this.safeAddEventListener(this.selectFolderBtn, 'click', () => {
                 if (typeof this.selectMassImportFolder === 'function') {
                     this.selectMassImportFolder();
@@ -720,20 +720,20 @@ class LMStudioClone {
             });
         }
         
-        // Проверка соединения каждые 10 секунд (увеличено с 5 для снижения нагрузки)
+        // Connection check every 10 seconds (increased from 5 to reduce load)
         setInterval(() => this.checkConnection(), 10000);
-        // Проверка статуса Ollama каждые 60 секунд (редко, чтобы не нагружать)
-        // Проверяем сразу один раз при загрузке, затем по интервалу
+        // Ollama status check every 60 seconds (infrequent to avoid load)
+        // Check once on load, then on interval
         setTimeout(() => {
             this.checkOllamaStatus();
             setInterval(() => {
-                // Проверяем только если не выполняется другая проверка
+                // Check only if no other check is running
                 if (!this.checkingOllamaStatus && !this.isOllamaConnected) {
-                    // Проверяем только если Ollama не подключен, чтобы не делать лишние запросы
+                    // Check only if Ollama not connected to avoid extra requests
                     this.checkOllamaStatus();
                 }
-            }, 60000); // Увеличили интервал до 60 секунд
-        }, 2000); // Первая проверка через 2 секунды после загрузки
+            }, 60000); // Interval set to 60 seconds
+        }, 2000); // First check 2 seconds after load
         } catch (error) {
             console.error('setupEventListeners failed:', error);
         } finally {
@@ -795,22 +795,22 @@ class LMStudioClone {
             const wsUrl = `${wsBase}/ws/progress`;
             this.websocket = new WebSocket(wsUrl);
             
-            // Очищаем предыдущий ping интервал, если был
+            // Clear previous ping interval if any
             if (this.wsPingInterval) {
                 clearInterval(this.wsPingInterval);
                 this.wsPingInterval = null;
             }
             
             this.websocket.onopen = () => {
-                console.log('WebSocket подключен для отслеживания прогресса');
+                console.log('WebSocket connected for progress tracking');
                 
-                // Отправляем ping каждые 20 секунд для поддержания соединения
+                // Send ping every 20 seconds to keep connection alive
                 this.wsPingInterval = setInterval(() => {
                     if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
                         try {
                             this.websocket.send(JSON.stringify({ type: 'ping' }));
                         } catch (error) {
-                            console.error('Ошибка отправки ping:', error);
+                            console.error('Ping send error:', error);
                         }
                     }
                 }, 20000);
@@ -820,58 +820,58 @@ class LMStudioClone {
                 try {
                     const data = JSON.parse(event.data);
                     
-                    // Игнорируем служебные сообщения (connected, pong, keepalive)
+                    // Ignore service messages (connected, pong, keepalive)
                     if (data.type === 'connected' || data.type === 'pong' || data.type === 'keepalive') {
-                        // Просто подтверждаем, что соединение активно
+                        // Just confirm connection is active
                         return;
                     }
                     
                     this.handleProgressUpdate(data);
                 } catch (error) {
-                    console.error('Ошибка парсинга WebSocket сообщения:', error);
+                    console.error('WebSocket message parse error:', error);
                 }
             };
             
             this.websocket.onclose = (event) => {
                 const closeInfo = {
                     code: event.code,
-                    reason: event.reason || 'нет причины',
+                    reason: event.reason || 'no reason',
                     wasClean: event.wasClean
                 };
-                console.log('WebSocket соединение закрыто', closeInfo);
+                console.log('WebSocket connection closed', closeInfo);
                 
-                // Очищаем ping интервал
+                // Clear ping interval
                 if (this.wsPingInterval) {
                     clearInterval(this.wsPingInterval);
                     this.wsPingInterval = null;
                 }
                 
-                // Переподключаемся во всех случаях, кроме намеренного закрытия со стороны клиента
-                // Код 1000 = нормальное закрытие (может быть от сервера или клиента)
-                // Код 1001 = ушел (например, сервер закрыл соединение)
-                // Код 1006 = аномальное закрытие (соединение разорвано без закрывающего фрейма)
-                // Мы переподключаемся везде, так как это соединение для отслеживания прогресса и должно быть всегда активно
+// Reconnect in all cases except intentional close by client
+        // Code 1000 = normal close (may be from server or client)
+        // Code 1001 = going away (e.g. server closed connection)
+        // Code 1006 = abnormal close (connection lost without close frame)
+        // We reconnect everywhere since this is for progress tracking and should stay active
                 if (event.code !== 1000 || !event.wasClean) {
-                    // Переподключаемся с небольшой задержкой для избежания циклов переподключения
-                    const delay = event.code === 1006 ? 5000 : 3000; // При аномальном закрытии ждем дольше
-                    console.log(`Переподключение через ${delay/1000} секунд (код: ${event.code}, wasClean: ${event.wasClean})`);
+                    // Reconnect with short delay to avoid reconnect loops
+                    const delay = event.code === 1006 ? 5000 : 3000; // Wait longer on abnormal close
+                    console.log(`Reconnecting in ${delay/1000} seconds (code: ${event.code}, wasClean: ${event.wasClean})`);
                     setTimeout(() => {
                         if (!this.websocket || this.websocket.readyState === WebSocket.CLOSED) {
                             this.connectWebSocket();
                         }
                     }, delay);
                 } else {
-                    console.log('WebSocket закрыт нормально и чисто (код 1000), переподключение не требуется');
+                    console.log('WebSocket closed normally (code 1000), no reconnect needed');
                 }
             };
             
             this.websocket.onerror = (error) => {
-                console.error('Ошибка WebSocket:', error);
-                // При ошибке соединение обычно закрывается автоматически
-                // onclose сработает после этого
+                console.error('WebSocket error:', error);
+                // On error connection usually closes automatically
+                // onclose will fire after that
             };
         } catch (error) {
-            console.error('Ошибка создания WebSocket соединения:', error);
+            console.error('WebSocket connection error:', error);
         }
     }
 
@@ -921,83 +921,83 @@ class LMStudioClone {
         this.patientAnalysisCurrent = current;
         this.patientAnalysisTotal = total;
         
-        // Убеждаемся, что прогресс виден
+        // Ensure progress is visible
         if (this.patientAnalysisProgress) {
             this.patientAnalysisProgress.style.display = 'block';
         }
         
-        // Обновляем прогресс-бар
+        // Update progress bar
         if (this.patientAnalysisProgressFill) {
             this.patientAnalysisProgressFill.style.width = `${percent}%`;
-            // Убираем зеленый цвет (если был установлен при завершении)
+            // Remove green color (if set on completion)
             this.patientAnalysisProgressFill.style.backgroundColor = '#007acc';
         }
         
-        // Обновляем счетчик
+        // Update counter
         if (this.patientAnalysisProgressCounter) {
             this.patientAnalysisProgressCounter.textContent = `${current} / ${total}`;
         }
         
-        // Обновляем текущего пациента
+        // Update current patient
         if (this.patientAnalysisCurrentPatient) {
             if (patientName) {
-                this.patientAnalysisCurrentPatient.textContent = `Обрабатывается: ${patientName}`;
+                this.patientAnalysisCurrentPatient.textContent = `Processing: ${patientName}`;
             } else {
                 this.patientAnalysisCurrentPatient.textContent = '';
             }
         }
         
-        // Обновляем текст прогресса
+        // Update progress text
         if (this.patientAnalysisProgressText) {
-            // Сохраняем иконку загрузки, если она есть
+            // Keep loading icon if present
             const existingSpinner = this.patientAnalysisProgressText.querySelector('i.fa-spinner');
-            // Удаляем иконку галочки (если была установлена при завершении)
+            // Remove check icon (if set on completion)
             const checkIcon = this.patientAnalysisProgressText.querySelector('i.fa-check-circle');
             if (checkIcon) {
                 checkIcon.remove();
             }
-            // Обновляем текст, сохраняя иконку загрузки
+            // Update text, keeping loading icon
             if (existingSpinner) {
-                // Если есть иконка загрузки, обновляем только текст после неё
+                // If loading icon present, update only text after it
                 const textNode = Array.from(this.patientAnalysisProgressText.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
                 if (textNode) {
-                    textNode.textContent = ` Анализ пациентов: ${percent}%`;
+                    textNode.textContent = ` Patient analysis: ${percent}%`;
                 } else {
-                    this.patientAnalysisProgressText.appendChild(document.createTextNode(` Анализ пациентов: ${percent}%`));
+                    this.patientAnalysisProgressText.appendChild(document.createTextNode(` Patient analysis: ${percent}%`));
                 }
             } else {
-                // Если нет иконки, добавляем её и текст
+                // If no icon, add it and text
                 this.patientAnalysisProgressText.innerHTML = '';
                 const spinner = document.createElement('i');
                 spinner.className = 'fas fa-spinner fa-spin';
                 spinner.style.marginRight = '5px';
                 this.patientAnalysisProgressText.appendChild(spinner);
-                this.patientAnalysisProgressText.appendChild(document.createTextNode(`Анализ пациентов: ${percent}%`));
+                this.patientAnalysisProgressText.appendChild(document.createTextNode(` Patient analysis: ${percent}%`));
             }
         }
     }
 
     handlePatientAnalysisResult(data) {
-        // Обрабатываем результат одного пациента, полученный через WebSocket
+        // Process single patient result from WebSocket
         if (!data.result) {
-            console.warn('handlePatientAnalysisResult: нет данных результата');
+            console.warn('handlePatientAnalysisResult: no result data');
             return;
         }
         
         const result = data.result;
         
-        // Добавляем результат в накопленный список
-        // Проверяем, нет ли уже такого результата (по patient_id)
+        // Add result to accumulated list
+        // Check if we already have this result (by patient_id)
         const existingIndex = this.accumulatedResults.findIndex(r => r.patient_id === result.patient_id);
         if (existingIndex >= 0) {
-            // Обновляем существующий результат
+            // Update existing result
             this.accumulatedResults[existingIndex] = result;
         } else {
-            // Добавляем новый результат
+            // Add new result
             this.accumulatedResults.push(result);
         }
         
-        // Обновляем lastPatientAnalysisResults для совместимости
+        // Update lastPatientAnalysisResults for compatibility
         if (!this.lastPatientAnalysisResults) {
             this.lastPatientAnalysisResults = [];
         }
@@ -1008,46 +1008,46 @@ class LMStudioClone {
             this.lastPatientAnalysisResults.push(result);
         }
         
-        console.log(`DEBUG: Получен результат для пациента ${result.patient_id} (${result.patient_name}), всего накоплено: ${this.accumulatedResults.length}`);
+        console.log(`DEBUG: Result for patient ${result.patient_id} (${result.patient_name}), total accumulated: ${this.accumulatedResults.length}`);
         
-        // Если автосохранение включено и это первый результат, запускаем таймер
+        // If auto-save on and this is first result, start timer
         if (this.autoSaveEnabled && this.accumulatedResults.length === 1 && !this.autoSaveInterval) {
             this.startAutoSave();
         }
     }
     
     startAutoSave() {
-        // НЕ запускаем периодическое автосохранение, чтобы избежать множества файлов
-        // Сохранение будет только в конце анализа
-        // Если нужно периодическое сохранение, можно включить, но браузер будет создавать файлы с суффиксами (1), (2) и т.д.
-        console.log(`DEBUG: Автосохранение отключено (будет сохранено только в конце анализа)`);
+        // Do NOT start periodic auto-save to avoid many files
+        // Save only at end of analysis
+        // For periodic save, browser would create files with suffixes (1), (2), etc.
+        console.log(`DEBUG: Auto-save disabled (will save only at end of analysis)`);
     }
     
     stopAutoSave() {
-        // Останавливаем автосохранение
+        // Stop auto-save
         if (this.autoSaveInterval) {
             clearInterval(this.autoSaveInterval);
             this.autoSaveInterval = null;
-            console.log('DEBUG: Автосохранение остановлено');
+            console.log('DEBUG: Auto-save stopped');
         }
     }
     
     async autoSaveToExcel() {
-        // Автоматическое сохранение накопленных результатов в Excel
-        // Добавляет только новые результаты в существующий файл
+        // Auto-save accumulated results to Excel
+        // Adds only new results to existing file
         if (!this.accumulatedResults || this.accumulatedResults.length === 0) {
             return;
         }
         
         if (typeof XLSX === 'undefined') {
-            console.warn('Автосохранение: SheetJS не загружен');
+            console.warn('Auto-save: SheetJS not loaded');
             return;
         }
         
         try {
             const MAX_CELL_LENGTH = 32767;
             
-            // Функция для обрезки текста
+            // Truncate text to fit cell
             const truncateText = (text, maxLength) => {
                 if (!text || text.length <= maxLength) {
                     return text || '';
@@ -1056,10 +1056,10 @@ class LMStudioClone {
                 const availableLength = maxLength - messageSize;
                 const end = text.substring(text.length - availableLength);
                 const removedLength = text.length - availableLength;
-                return `[... ТЕКСТ ОБРЕЗАН: удалено ${removedLength} символов из начала (было ${text.length}, осталось ${availableLength}). В начале могли быть повторяющиеся вопросы ...]\n\n` + end;
+                return `[... TEXT TRUNCATED: ${removedLength} chars removed from start (was ${text.length}, kept ${availableLength}). Start may have repeated questions ...]\n\n` + end;
             };
             
-            // Определяем фиксированное имя файла (одно и то же для всего анализа)
+            // Fixed filename (same for entire analysis)
             if (!this.autoSaveFileName) {
                 if (this.analysisStartTime) {
                     const dateStr = this.analysisStartTime.toISOString().split('T')[0];
@@ -1071,14 +1071,14 @@ class LMStudioClone {
                 }
             }
             
-            // Всегда сохраняем ВСЕ накопленные результаты (не только новые)
-            // Это гарантирует, что файл содержит полную актуальную информацию
-            // Браузер может создать файл с суффиксом (1), (2) и т.д., но это лучше, чем терять данные
+            // Always save ALL accumulated results (not just new)
+            // Ensures file has full up-to-date info
+            // Browser may add suffix (1), (2) but better than losing data
             
             const headers = ['Patient', 'final prompt', 'llm response'];
             const rows = this.accumulatedResults.map((row) => {
                 const prompt = row.prompt || '';
-                const response = row.response || (row.error ? `Ошибка: ${row.error}` : '');
+                const response = row.response || (row.error ? `Error: ${row.error}` : '');
                 
                 return {
                     'Patient': row.patient_name || `ID ${row.patient_id}`,
@@ -1091,20 +1091,20 @@ class LMStudioClone {
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Patient Analysis');
             
-            // Сохраняем файл с фиксированным именем
-            // Браузер может добавить суффикс (1), (2) если файл уже существует в папке загрузок
-            // Но это лучше, чем создавать множество файлов с разными именами
+            // Save file with fixed name
+            // Browser may add (1), (2) if file already exists in downloads
+            // Better than creating many differently named files
             XLSX.writeFile(workbook, this.autoSaveFileName);
             
-            // Отмечаем все результаты как сохраненные
+            // Mark all results as saved
             this.accumulatedResults.forEach(row => {
                 this.savedPatientIds.add(row.patient_id);
             });
             
-            this.logToConsole(`💾 Автосохранение: сохранено ${this.accumulatedResults.length} результатов в ${this.autoSaveFileName}`, 'info');
+            this.logToConsole(`💾 Auto-save: saved ${this.accumulatedResults.length} results to ${this.autoSaveFileName}`, 'info');
         } catch (error) {
-            console.error('Ошибка автосохранения:', error);
-            this.logToConsole(`❌ Ошибка автосохранения: ${error.message}`, 'error');
+            console.error('Auto-save error:', error);
+            this.logToConsole(`❌ Auto-save error: ${error.message}`, 'error');
         }
     }
 
@@ -1113,83 +1113,83 @@ class LMStudioClone {
         const success = data.success || 0;
         const failed = data.failed || 0;
         
-        // Обновляем прогресс до 100%
+        // Update progress to 100%
         if (this.patientAnalysisProgressFill) {
             this.patientAnalysisProgressFill.style.width = '100%';
-            // Устанавливаем зеленый цвет для индикации завершения
+            // Set green color to indicate completion
             this.patientAnalysisProgressFill.style.backgroundColor = '#28a745';
         }
         
-        // Обновляем счетчик
+        // Update counter
         if (this.patientAnalysisProgressCounter) {
             this.patientAnalysisProgressCounter.textContent = `${total} / ${total}`;
         }
         
-        // Очищаем текущего пациента
+        // Clear current patient
         if (this.patientAnalysisCurrentPatient) {
             this.patientAnalysisCurrentPatient.textContent = '';
         }
         
-        // Обновляем текст с иконкой галочки
+        // Update text with check icon
         if (this.patientAnalysisProgressText) {
-            // Удаляем иконку загрузки
+            // Remove loading icon
             const spinner = this.patientAnalysisProgressText.querySelector('i.fa-spinner');
             if (spinner) {
                 spinner.remove();
             }
-            // Удаляем старую иконку галочки, если есть
+            // Remove old check icon if any
             const oldCheck = this.patientAnalysisProgressText.querySelector('i.fa-check-circle');
             if (oldCheck) {
                 oldCheck.remove();
             }
-            // Добавляем иконку галочки
+            // Add check icon
             const checkIcon = document.createElement('i');
             checkIcon.className = 'fas fa-check-circle';
             checkIcon.style.marginRight = '5px';
             checkIcon.style.color = '#28a745';
-            // Устанавливаем текст
-            this.patientAnalysisProgressText.textContent = `Анализ завершен: ${success} успешно, ${failed} ошибок`;
-            // Вставляем иконку в начало
+            // Set text
+            this.patientAnalysisProgressText.textContent = `Analysis complete: ${success} success, ${failed} errors`;
+            // Insert icon at start
             this.patientAnalysisProgressText.insertBefore(checkIcon, this.patientAnalysisProgressText.firstChild);
         }
         
-        // Показываем сводку
+        // Show summary
         if (this.patientAnalysisSummary) {
             this.patientAnalysisSummary.innerHTML = `
-                <strong style="color: #28a745;">✓ Анализ завершен!</strong><br>
-                Всего пациентов: ${total}<br>
-                Успешно обработано: <span style="color: #28a745;">${success}</span><br>
-                Ошибок: <span style="color: ${failed > 0 ? '#dc3545' : '#28a745'}">${failed}</span>
+                <strong style="color: #28a745;">✓ Analysis complete!</strong><br>
+                Total patients: ${total}<br>
+                Processed successfully: <span style="color: #28a745;">${success}</span><br>
+                Errors: <span style="color: ${failed > 0 ? '#dc3545' : '#28a745'}">${failed}</span>
             `;
             this.patientAnalysisSummary.style.display = 'block';
         }
         
-        // Включаем кнопку загрузки, если есть результаты
-        // Проверяем результаты еще раз, так как они могли быть установлены после вызова этой функции через WebSocket
+        // Enable download button if we have results
+        // Check results again as they may have been set after this call via WebSocket
         if (this.downloadPatientAnalysisBtn) {
             if (this.lastPatientAnalysisResults && this.lastPatientAnalysisResults.length > 0) {
                 this.downloadPatientAnalysisBtn.disabled = false;
-                console.log(`DEBUG: Кнопка загрузки активирована в handlePatientAnalysisComplete (${this.lastPatientAnalysisResults.length} результатов)`);
+                console.log(`DEBUG: Download button enabled in handlePatientAnalysisComplete (${this.lastPatientAnalysisResults.length} results)`);
             } else {
-                console.log('DEBUG: Кнопка загрузки не активирована - результаты еще не получены или пусты');
+                console.log('DEBUG: Download button not enabled - results not yet received or empty');
             }
         }
         
-        // Включаем кнопку запуска
+        // Enable start button
         if (this.runPatientAnalysisBtn) {
             this.runPatientAnalysisBtn.disabled = false;
         }
         
-        // Останавливаем автосохранение и выполняем финальное сохранение
+        // Stop auto-save and do final save
         this.stopAutoSave();
         if (this.accumulatedResults.length > 0) {
             this.autoSaveToExcel();
-            this.logToConsole(`💾 Финальное автосохранение: сохранено ${this.accumulatedResults.length} результатов`, 'success');
+            this.logToConsole(`💾 Final auto-save: saved ${this.accumulatedResults.length} results`, 'success');
         }
         
-        // НЕ скрываем прогресс сразу - оставляем видимым для пользователя
-        // Пользователь может сам закрыть или он скроется через таймаут в runPatientAnalysis
-        this.logToConsole(`✅ Анализ всех пациентов завершен: ${success} успешно, ${failed} ошибок`, 'success');
+        // Do NOT hide progress immediately - leave visible for user
+        // User can close or it will hide via timeout in runPatientAnalysis
+        this.logToConsole(`✅ All patients analysis complete: ${success} success, ${failed} errors`, 'success');
     }
 
     updateProgressBar(data) {
@@ -1198,12 +1198,12 @@ class LMStudioClone {
         this.progressPercent.textContent = `${data.progress_percent}%`;
         this.progressFill.style.width = `${data.progress_percent}%`;
         
-        // Показываем более детальную информацию
-        const processedDocs = Math.min(data.current_batch * 10, data.total_documents); // Примерно
+        // Show more detailed info
+        const processedDocs = Math.min(data.current_batch * 10, data.total_documents); // Approx
         this.progressDetails.textContent = 
-            `Батч ${data.current_batch}/${data.total_batches} • Обработано ~${processedDocs}/${data.total_documents} документов`;
+            `Batch ${data.current_batch}/${data.total_batches} • Processed ~${processedDocs}/${data.total_documents} documents`;
         
-        // Единый скролл
+        // Single scroll
         this.scrollToBottom();
     }
 
@@ -1222,7 +1222,7 @@ class LMStudioClone {
             if (data.status === 'healthy') {
                 this.isConnected = true;
                 
-                // Обновляем статус с учетом офлайн режима
+                // Update status considering offline mode
                 let statusText = 'Connected';
                 if (data.offline_mode) {
                     statusText = 'Connected (offline)';
@@ -1231,17 +1231,17 @@ class LMStudioClone {
                 this.updateStatus(statusText, true);
                 await this.updateModelInfo();
                 
-                // Обновляем информацию о соединениях
-                // Используем прямой ollama_connected из health, если доступен
+                // Update connection info
+                // Use direct ollama_connected from health if available
                 if (data.ollama_connected !== undefined) {
                     const modelsCount = data.connection_info?.available_models_count || 0;
                     const wasConnected = this.isOllamaConnected;
                     this.isOllamaConnected = data.ollama_connected;
                     
-                    // Обновляем статус только если он изменился или при первой загрузке
+                    // Update status only if changed or on first load
                     if (wasConnected !== this.isOllamaConnected || !this.ollamaModelsLoaded) {
                         this.updateOllamaStatus(data.ollama_connected, modelsCount);
-                        // Логируем только при изменении статуса или при первой загрузке
+                        // Log only on status change or first load
                         if (!wasConnected || !this.ollamaModelsLoaded) {
                             console.log('DEBUG: Ollama status from /health:', data.ollama_connected, 'models:', modelsCount);
                         }
@@ -1276,20 +1276,20 @@ class LMStudioClone {
     }
 
     updateConnectionInfo(connectionInfo) {
-        // Обновляем информацию о соединениях в интерфейсе
+        // Update connection info in UI
         if (connectionInfo.offline_mode) {
             this.logToConsole('🌐 Offline mode (internet unavailable)', 'warning');
         } else {
             this.logToConsole('🌐 Online mode (internet available)', 'success');
         }
         
-        // Обновляем статус Ollama из connectionInfo, только если статус еще не был установлен напрямую
-        // (чтобы не перезаписать правильный статус из /health)
+        // Update Ollama status from connectionInfo only if not already set directly
+        // (so we don't overwrite correct status from /health)
         if (!this.isOllamaConnected && connectionInfo.ollama_local_available) {
             this.isOllamaConnected = true;
             this.updateOllamaStatus(true, connectionInfo.available_models_count || 0);
         } else if (!connectionInfo.ollama_local_available && !this.isOllamaConnected) {
-            // Если не подключен, делаем прямую проверку
+            // If not connected, do direct check
             setTimeout(() => {
                 if (!this.checkingOllamaStatus) {
                     this.checkOllamaStatus();
@@ -1303,10 +1303,10 @@ class LMStudioClone {
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/available-models`);
             const data = await response.json();
             
-            // Очищаем список моделей, но сохраняем модели Ollama если они уже загружены
+            // Clear model list but keep Ollama models if already loaded
             const ollamaOptions = [];
             if (this.ollamaModelsLoaded && this.modelSelect) {
-                // Сохраняем опции Ollama перед очисткой
+                // Save Ollama options before clear
                 Array.from(this.modelSelect.options).forEach(opt => {
                     if (opt.value.startsWith('ollama:')) {
                         ollamaOptions.push({
@@ -1317,11 +1317,11 @@ class LMStudioClone {
                 });
             }
             
-            // Очищаем список
+            // Clear list
             if (this.modelSelect) {
             this.modelSelect.innerHTML = '<option value="">Select a model...</option>';
                 
-                // Восстанавливаем модели Ollama если они были
+                // Restore Ollama models if they were there
                 ollamaOptions.forEach(opt => {
                     const option = document.createElement('option');
                     option.value = opt.value;
@@ -1330,19 +1330,19 @@ class LMStudioClone {
                 });
             }
             
-            // Проверяем, что получили успешный ответ
+            // Ensure we got a successful response
             if (data.status === 'success' && data.models) {
                 const models = data.models;
                 
                 Object.keys(models).forEach(modelId => {
-                    // Проверяем, что такой модели еще нет в списке
+                    // Ensure this model is not already in list
                     const existingOption = Array.from(this.modelSelect.options).find(opt => opt.value === modelId);
                     if (!existingOption) {
                     const option = document.createElement('option');
                     option.value = modelId;
-                    option.textContent = modelId; // Показываем только имя модели
+                    option.textContent = modelId; // Show only model name
                     
-                    // Выделяем qwen2.5:latest как рекомендуемую
+                    // Highlight qwen2.5:latest as recommended
                     if (modelId === 'qwen2.5:latest') {
                         option.textContent += ' (recommended)';
                         option.selected = true;
@@ -1358,17 +1358,17 @@ class LMStudioClone {
                 this.logToConsole('Failed to load model list', 'error');
             }
             
-            // Обновляем статистику RAG
+            // Update RAG stats
             await this.updateRagStats();
             
-            // Обновляем статистику пациентов
+            // Update patients stats
             await this.updatePatientsStats();
             await this.loadPatientsList();
             
-            // Всегда загружаем модели Ollama ПОСЛЕ обновления статистики, если Ollama подключен
-            // Это гарантирует, что модели будут добавлены даже если список был очищен
+            // Always load Ollama models AFTER stats update when Ollama is connected
+            // Ensures models are added even if list was cleared
             if (this.isOllamaConnected) {
-                console.log('DEBUG: loadAvailableModels: Ollama подключен, загружаем модели...');
+                console.log('DEBUG: loadAvailableModels: Ollama connected, loading models...');
                 await this.loadOllamaModels();
             }
         } catch (error) {
@@ -1389,39 +1389,39 @@ class LMStudioClone {
         this.loadModelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
         
         try {
-            // Удаляем префикс ollama: если он есть
+            // Remove ollama: prefix if present
             const modelName = selectedModel.replace('ollama:', '');
             
-            // Для всех моделей загружаем через API
-            // Увеличиваем таймаут до 5 минут для больших моделей
+            // Load via API for all models
+            // 5 min timeout for large models
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/load-model?model_name=${modelName}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 }
-            }, 300000); // 5 минут (300000ms) для загрузки больших моделей
+            }, 300000); // 5 min (300000ms) for large model load
             
             const data = await response.json();
             
             if (response.ok) {
                 this.currentModel = selectedModel;
-                this.showNotification(`✅ Модель ${selectedModel} загружена успешно!`, 'success');
+                this.showNotification(`✅ Model ${selectedModel} loaded successfully!`, 'success');
                 this.logToConsole(`Model ${selectedModel} loaded successfully`, 'success');
                 
-                // Обновляем информацию о модели
+                // Update model info
                 await this.updateModelInfo();
                 
-                // Обновляем статус подключения
+                // Update connection status
                 await this.checkConnection();
                 
             } else {
                 const errorDetail = data.detail || data.message || 'Unknown error';
-                this.showNotification(`❌ Ошибка загрузки модели: ${errorDetail}`, 'error');
+                this.showNotification(`❌ Model load error: ${errorDetail}`, 'error');
                 this.logToConsole(`Model load error: ${errorDetail}`, 'error');
             }
         } catch (error) {
             const errorMessage = error.message || error.toString();
-            this.showNotification(`❌ Ошибка загрузки модели: ${errorMessage}`, 'error');
+            this.showNotification(`❌ Model load error: ${errorMessage}`, 'error');
             this.logToConsole(`Model load error: ${errorMessage}`, 'error');
         } finally {
             this.loadModelBtn.disabled = false;
@@ -1436,10 +1436,10 @@ class LMStudioClone {
             
             if (info.status === 'model_loaded') {
                 this.modelInfo.innerHTML = `
-                    <p><strong>Статус:</strong> Загружена</p>
-                    <p><strong>Устройство:</strong> ${info.device}</p>
-                    <p><strong>Параметры:</strong> ${info.parameters.toLocaleString()}</p>
-                    <p><strong>Память:</strong> ${(info.memory_usage / 1024 / 1024).toFixed(1)} MB</p>
+                    <p><strong>Status:</strong> Loaded</p>
+                    <p><strong>Device:</strong> ${info.device}</p>
+                    <p><strong>Parameters:</strong> ${info.parameters.toLocaleString()}</p>
+                    <p><strong>Memory:</strong> ${(info.memory_usage / 1024 / 1024).toFixed(1)} MB</p>
                 `;
             } else {
                 this.modelInfo.innerHTML = '<p>No model loaded</p>';
@@ -1451,10 +1451,10 @@ class LMStudioClone {
 
     updateModelInfoForOllama(modelName) {
         this.modelInfo.innerHTML = `
-            <p><strong>Статус:</strong> Готова к использованию</p>
-            <p><strong>Тип:</strong> Ollama</p>
-            <p><strong>Модель:</strong> ${modelName}</p>
-            <p><strong>Сервер:</strong> ${this.ollamaUrl}</p>
+            <p><strong>Status:</strong> Ready to use</p>
+            <p><strong>Type:</strong> Ollama</p>
+            <p><strong>Model:</strong> ${modelName}</p>
+            <p><strong>Server:</strong> ${this.ollamaUrl}</p>
         `;
     }
     async sendMessage() {
@@ -1467,17 +1467,17 @@ class LMStudioClone {
             return;
         }
         
-        // Диагностическое логирование
+        // Diagnostic logging
         this.logToConsole(`🔍 Pre-send diagnostics:`, 'info');
         this.logToConsole(`  - Current model: ${this.currentModel}`, 'info');
         this.logToConsole(`  - Connection status: ${this.isConnected ? 'connected' : 'disconnected'}`, 'info');
         this.logToConsole(`  - Message length: ${message.length} chars`, 'info');
 
-        // MemoRAG всегда включен
-        const useMemoRag = true; // MemoRAG всегда включен
+        // MemoRAG always enabled
+        const useMemoRag = true; // MemoRAG always on
         const chunksCount = this.memoragChunksCount ? parseInt(this.memoragChunksCount.value) : 5;
 
-        // Добавляем сообщение пользователя
+        // Add user message
         this.addMessage(message, 'user');
         this.chatInput.value = '';
         this.sendBtn.disabled = true;
@@ -1485,23 +1485,23 @@ class LMStudioClone {
 
         try {
             if (useMemoRag) {
-                // Используем MemoRAG для улучшения контекста
+                // Use MemoRAG for richer context
                 await this.sendMessageWithMemoRag(message, chunksCount);
             } else {
-                // Используем обычную потоковую генерацию
+                // Use plain streaming generation
                 await this.sendMessageStream(message);
             }
         } catch (error) {
             const errorMessage = error.message || error.toString();
             
-            // Детальное логирование ошибки
+            // Detailed error logging
             this.logToConsole(`❌ Message send error: ${errorMessage}`, 'error');
             this.logToConsole(`🔍 Error details:`, 'error');
             this.logToConsole(`  - Error type: ${error.name || 'Unknown'}`, 'error');
             this.logToConsole(`  - Error stack: ${error.stack || 'Unavailable'}`, 'error');
             
-            // Показываем пользователю понятное сообщение
-            let userMessage = `Ошибка: ${errorMessage}`;
+            // Show user-friendly message
+            let userMessage = `Error: ${errorMessage}`;
             
             if (errorMessage.includes('Failed to fetch')) {
                 userMessage += '\n💡 Check server connection (http://localhost:8000)';
@@ -1520,15 +1520,15 @@ class LMStudioClone {
     
     async sendMessageWithMemoRag(message, chunksCount) {
         try {
-            // Показываем индикатор анализа MemoRAG
+            // Show MemoRAG analysis indicator
             const loadingMessage = this.addMessage('🤔 Analyzing with MemoRAG...', 'assistant');
             
-            // Получаем релевантные документы через MemoRAG
+            // Get relevant docs via MemoRAG
             const contextLength = parseInt(this.memoragContextLength?.value) || 200;
             
-            // Получаем полную информацию о пациенте, если выбраны
+            // Get full patient info if selected
             let patientData = null;
-            console.log('DEBUG: Проверка данных пациента для MemoRAG:', {
+            console.log('DEBUG: Patient data check for MemoRAG:', {
                 usePatientData: this.usePatientData,
                 checked: this.usePatientData?.checked,
                 chatPatientSelect: this.chatPatientSelect,
@@ -1536,10 +1536,10 @@ class LMStudioClone {
                 selectOptions: this.chatPatientSelect ? Array.from(this.chatPatientSelect.options).map(opt => ({ value: opt.value, text: opt.text })) : []
             });
             
-            // Получаем актуальное значение выбранного пациента ПРЯМО СЕЙЧАС (на момент отправки)
+            // Get current patient selection at send time
             const currentPatientId = this.chatPatientSelect ? this.chatPatientSelect.value : null;
             
-            console.log('DEBUG: Актуальный выбор пациента при отправке сообщения:', {
+            console.log('DEBUG: Current patient selection on send:', {
                 currentPatientId: currentPatientId,
                 currentPatientIdType: typeof currentPatientId,
                 currentPatientIdLength: currentPatientId ? currentPatientId.length : 0,
@@ -1550,17 +1550,17 @@ class LMStudioClone {
                     this.chatPatientSelect.options[this.chatPatientSelect.selectedIndex]?.textContent : null
             });
             
-            // Предупреждение, если чекбокс включен, но пациент не выбран
+            // Warn if "include patient" is checked but no patient selected
             if (this.usePatientData && this.usePatientData.checked && (!this.chatPatientSelect || !currentPatientId || currentPatientId.trim() === '')) {
-                console.warn('DEBUG: ⚠️ Чекбокс "Учитывать данные пациента" включен, но пациент не выбран!');
+                console.warn('DEBUG: ⚠️ "Include patient data" is checked but no patient selected!');
                 
-                // Явное предупреждение пользователю
+                // Explicit warning to user
                 const warningMessage = this.addMessage('⚠️ WARNING: "Include patient data" is enabled, but no patient is selected. Select a patient above so data is added to the prompt.', 'warning');
                 setTimeout(() => {
                     if (warningMessage && warningMessage.parentNode) {
                         warningMessage.remove();
                     }
-                }, 10000); // Показываем 10 секунд
+                }, 10000); // Show for 10 seconds
                 
                 this.logToConsole('⚠️ WARNING: "Include patient data" is enabled but no patient is selected!', 'warning');
                 this.logToConsole('   → Select a patient above so patient data is added to the prompt', 'warning');
@@ -1571,22 +1571,22 @@ class LMStudioClone {
                 try {
                     const patientId = parseInt(currentPatientId);
                     
-                    // Валидация ID пациента
+                    // Validate patient ID
                     if (isNaN(patientId) || patientId <= 0) {
-                        console.error(`DEBUG: Некорректный ID пациента: "${currentPatientId}" -> ${patientId}`);
+                        console.error(`DEBUG: Invalid patient ID: "${currentPatientId}" -> ${patientId}`);
                         this.logToConsole(`❌ Invalid patient ID: "${currentPatientId}". Select a patient from the list.`, 'error');
                         this.showNotification('Select a valid patient from the list!', 'error');
                         return;
                     }
                     
-                    console.log(`DEBUG: Загружаем данные пациента ID=${patientId} для MemoRAG`);
+                    console.log(`DEBUG: Loading patient data ID=${patientId} for MemoRAG`);
                     const patientResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients/${patientId}/full`, {}, 10000);
                     
-                    console.log('DEBUG: Ответ сервера о пациенте:', patientResponse.status, patientResponse.ok);
+                    console.log('DEBUG: Patient API response:', patientResponse.status, patientResponse.ok);
                     
                     if (patientResponse.ok) {
                         patientData = await patientResponse.json();
-                        console.log('DEBUG: Данные пациента получены:', {
+                        console.log('DEBUG: Patient data received:', {
                             patient: patientData.patient?.name,
                             documentsCount: patientData.documents?.length,
                             documents: patientData.documents?.map(d => ({ type: d.document_type, contentLength: d.content?.length }))
@@ -1595,11 +1595,11 @@ class LMStudioClone {
                         if (patientData && patientData.patient) {
                             this.logToConsole(`📋 Loaded full patient info: ${patientData.patient.name} (${patientData.documents?.length || 0} documents)`, 'info');
                         } else {
-                            console.warn('DEBUG: Данные пациента получены, но структура некорректна');
+                            console.warn('DEBUG: Patient data received but structure is invalid');
                             this.logToConsole('⚠️ Patient data received but structure is invalid', 'warning');
                         }
                     } else {
-                        // Улучшенная обработка ошибок
+                        // Improved error handling
                         let errorDetail = '';
                         try {
                             const errorData = await patientResponse.json();
@@ -1608,42 +1608,42 @@ class LMStudioClone {
                             errorDetail = `HTTP ${patientResponse.status}`;
                         }
                         
-                        console.error(`DEBUG: Ошибка получения данных пациента: ${patientResponse.status} - ${errorDetail}`);
+                        console.error(`DEBUG: Patient data fetch error: ${patientResponse.status} - ${errorDetail}`);
                         
                         if (patientResponse.status === 404) {
                             this.logToConsole(`❌ Patient ID=${patientId} not found in the database. It may have been deleted or the ID is invalid.`, 'error');
-                            this.showNotification(`Пациент с ID=${patientId} не найден! Обновляю список пациентов...`, 'error');
-                            // Обновляем список пациентов и сбрасываем выбор
+                            this.showNotification(`Patient with ID=${patientId} not found! Updating patient list...`, 'error');
+                            // Refresh patient list and clear selection
                             if (this.chatPatientSelect) {
                                 this.chatPatientSelect.value = '';
                             }
-                            // Обновляем список пациентов в выпадающем списке
+                            // Reload patient dropdown
                             try {
                                 await this.loadPatientsForChat();
                                 this.logToConsole('📋 Patient list updated', 'info');
                             } catch (e) {
-                                console.error('Ошибка обновления списка пациентов:', e);
+                                console.error('Error updating patient list:', e);
                             }
                         } else {
                             this.logToConsole(`⚠️ Failed to fetch patient data: ${errorDetail}`, 'warning');
                         }
                     }
                 } catch (error) {
-                    console.error('DEBUG: Исключение при загрузке данных пациента:', error);
+                    console.error('DEBUG: Exception loading patient data:', error);
                     this.logToConsole(`❌ Failed to load patient data: ${error.message}`, 'error');
-                    this.showNotification(`Ошибка загрузки данных пациента: ${error.message}`, 'error');
+                    this.showNotification(`Error loading patient data: ${error.message}`, 'error');
                 }
             } else {
-                console.log('DEBUG: Данные пациента не будут загружены для MemoRAG:', {
+                console.log('DEBUG: Patient data will not be loaded for MemoRAG:', {
                     usePatientDataExists: !!this.usePatientData,
                     usePatientDataChecked: this.usePatientData?.checked,
                     chatPatientSelectExists: !!this.chatPatientSelect,
                     patientSelected: !!currentPatientId,
                     currentPatientId: currentPatientId,
-                    reason: !this.usePatientData ? 'usePatientData не существует' :
-                            !this.usePatientData.checked ? 'чекбокс выключен' :
-                            !this.chatPatientSelect ? 'select не существует' :
-                            !currentPatientId || currentPatientId.trim() === '' ? 'пациент не выбран' : 'неизвестная причина'
+                    reason: !this.usePatientData ? 'usePatientData missing' :
+                            !this.usePatientData.checked ? 'checkbox unchecked' :
+                            !this.chatPatientSelect ? 'select missing' :
+                            !currentPatientId || currentPatientId.trim() === '' ? 'no patient selected' : 'unknown'
                 });
             }
             
@@ -1662,24 +1662,24 @@ class LMStudioClone {
             const searchData = await searchResponse.json();
             
             if (searchResponse.ok && searchData.status === 'success') {
-                // Удаляем индикатор загрузки
+                // Remove loading indicator
                 loadingMessage.remove();
                 
-                // Формируем правильную структуру запроса к LLM
+                // Build correct LLM request structure
                 await this.sendMessageWithMemoRagContext(message, searchData, patientData);
                 
-                // Обновляем статистику MemoRAG
+                // Update MemoRAG stats
                 this.updateMemoRagStats();
                 
-                // Логируем использование MemoRAG
+                // Log MemoRAG usage
                 const totalDocs = searchData.count + (patientData ? patientData.documents.length : 0);
             this.logToConsole(`🧠 MemoRAG used: ${searchData.count} relevant docs${patientData ? ` + ${patientData.documents.length} patient docs` : ''}`, 'info');
                 
-                // Показываем информацию о найденных документах в чате
+                // Show info about found documents in chat
                 if (searchData.results && searchData.results.length > 0) {
-                    const infoText = `📚 Найдено ${totalDocs} релевантных документов${patientData ? ` (включая ${patientData.documents.length} документов пациента)` : ''} из MemoRAG`;
+                    const infoText = `📚 Found ${totalDocs} relevant documents${patientData ? ` (including ${patientData.documents.length} patient docs)` : ''} from MemoRAG`;
                     const infoMessage = this.addMessage(infoText, 'info');
-                    // Автоматически скрываем через 3 секунды
+                    // Auto-hide after 3 seconds
                     setTimeout(() => {
                         if (infoMessage && infoMessage.parentNode) {
                             infoMessage.remove();
@@ -1692,21 +1692,21 @@ class LMStudioClone {
             }
         } catch (error) {
             this.logToConsole(`❌ MemoRAG error: ${error.message}`, 'error');
-            // Fallback к обычному чату
+            // Fallback to plain chat
             await this.sendMessageStream(message);
         }
     }
 
     async sendMessageWithMemoRagContext(userMessage, searchData, patientData = null) {
-        // Формируем правильную структуру запроса к LLM:
-        // 1. system → системный промпт
-        // 2. context → данные пациента (если выбраны)
-        // 3. context → данные из MemoRAG
-        // 4. user → текущий вопрос пользователя
+        // Build LLM request structure:
+        // 1. system → system prompt
+        // 2. context → patient data (if selected)
+        // 3. context → MemoRAG data
+        // 4. user → current user question
         
         const messages = [];
         
-        // 1. Добавляем системный промпт (глобальная роль)
+        // 1. Add system prompt (global role)
         if (this.useSystemPrompt.checked && this.systemPrompt.value.trim()) {
             const systemContent = this.systemPrompt.value.trim();
             messages.push({
@@ -1727,50 +1727,50 @@ class LMStudioClone {
         
         if (patientData && patientData.patient) {
             let patientContext = '\n' + '='.repeat(80) + '\n';
-            patientContext += 'ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\n';
+            patientContext += 'PATIENT DATA - USE FOR YOUR ANSWER\n';
             patientContext += '='.repeat(80) + '\n\n';
             
-            // Добавляем основную информацию о пациенте
+            // Add main patient info
             const patient = patientData.patient;
-            patientContext += `ПАЦИЕНТ:\n`;
-            patientContext += `  Имя: ${patient.name}\n`;
-            if (patient.age) patientContext += `  Возраст: ${patient.age} лет\n`;
-            if (patient.gender) patientContext += `  Пол: ${patient.gender}\n`;
-            if (patient.notes) patientContext += `  Заметки: ${patient.notes}\n`;
-            patientContext += `  Дата создания: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
+            patientContext += `PATIENT:\n`;
+            patientContext += `  Name: ${patient.name}\n`;
+            if (patient.age) patientContext += `  Age: ${patient.age} years\n`;
+            if (patient.gender) patientContext += `  Gender: ${patient.gender}\n`;
+            if (patient.notes) patientContext += `  Notes: ${patient.notes}\n`;
+            patientContext += `  Created: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
             
-            // Добавляем документы пациента
+            // Add patient documents
             if (patientData.documents && patientData.documents.length > 0) {
-                patientContext += `МЕДИЦИНСКИЕ ДОКУМЕНТЫ (${patientData.documents.length} документов):\n\n`;
-                patientContext += `ВНИМАНИЕ: В этих документах могут быть данные для оценки показателей!\n`;
-                patientContext += `ОБЯЗАТЕЛЬНО ищи в каждом документе:\n`;
-                patientContext += `  1. NPS (степень полипов 0-8) - ищи упоминания полипов, оценок полипов, степени выраженности\n`;
-                patientContext += `  2. SNOT-22 (0-110) - ищи анкеты SNOT-22, оценки симптомов, баллы\n`;
-                patientContext += `  3. Контроль ПРС (EPOS 2020) - ищи диагнозы риносинусит, ПРС, контроль\n`;
-                patientContext += `  4. T2-воспаление - ищи эозинофилы (EOS), IgE, FeNO, упоминания астмы, AERD\n`;
-                patientContext += `  5. ACT (контроль астмы ≤19/20-24/25) - ищи анкеты ACT, контроль астмы\n`;
-                patientContext += `  6. Любые числа, показатели, анализы, обследования\n\n`;
+                patientContext += `MEDICAL DOCUMENTS (${patientData.documents.length} documents):\n\n`;
+                patientContext += `ATTENTION: These documents may contain data for outcome assessment!\n`;
+                patientContext += `Look in each document for:\n`;
+                patientContext += `  1. NPS (polyp score 0-8) - polyp mentions, polyp scores, severity\n`;
+                patientContext += `  2. SNOT-22 (0-110) - SNOT-22 questionnaires, symptom scores\n`;
+                patientContext += `  3. CRS control (EPOS 2020) - rhinosinusitis, CRS, control\n`;
+                patientContext += `  4. T2 inflammation - eosinophils (EOS), IgE, FeNO, asthma, AERD\n`;
+                patientContext += `  5. ACT (asthma control ≤19/20-24/25) - ACT questionnaires\n`;
+                patientContext += `  6. Any numbers, scores, labs, examinations\n\n`;
                 
                 patientData.documents.forEach((doc, index) => {
                     const content = (doc && typeof doc.content === 'string') ? this.stripEmptyLines(doc.content) : '';
-                    patientContext += `\n[ДОКУМЕНТ ${index + 1}/${patientData.documents.length}] Тип: ${doc.document_type}\n`;
-                    patientContext += (content ? content + '\n' : '[Содержимое документа отсутствует]\n');
+                    patientContext += `\n[DOCUMENT ${index + 1}/${patientData.documents.length}] Type: ${doc.document_type}\n`;
+                    patientContext += (content ? content + '\n' : '[Document content missing]\n');
                 });
                 
                 console.log(`DEBUG: Added ${patientData.documents.length} patient documents to prompt`);
-                patientContext += '\nИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ ДОКУМЕНТОВ:\n';
-                patientContext += '1. Прочитай ВСЕ документы выше ОЧЕНЬ ВНИМАТЕЛЬНО\n';
-                patientContext += '2. Найди в документах УПОМИНАНИЯ показателей: NPS, SNOT-22, эозинофилы, IgE, FeNO, астма, ACT\n';
-                patientContext += '3. Найди ЧИСЛА и ПОКАЗАТЕЛИ, которые могут относиться к оценке\n';
-                patientContext += '4. Найди ДИАГНОЗЫ: риносинусит, ПРС, полипы, астма\n';
-                patientContext += '5. Найди РЕЗУЛЬТАТЫ анализов: эозинофилы, лейкоциты, IgE\n';
-                patientContext += '6. Найди АНКЕТЫ: SNOT-22, ACT, NOSE, опросники\n';
-                patientContext += '7. Если нашел данные - используй их ТОЧНО как указано в документе\n';
-                patientContext += '8. Если данных нет - пиши "нет данных для оценки"\n';
-                patientContext += '9. НЕ придумывай данные, НЕ используй общие знания - только из документов выше!\n\n';
+                patientContext += '\nINSTRUCTIONS FOR USING DOCUMENTS:\n';
+                patientContext += '1. Read ALL documents above VERY CAREFULLY\n';
+                patientContext += '2. Find MENTIONS of: NPS, SNOT-22, eosinophils, IgE, FeNO, asthma, ACT\n';
+                patientContext += '3. Find NUMBERS and SCORES that may relate to assessment\n';
+                patientContext += '4. Find DIAGNOSES: rhinosinusitis, CRS, polyps, asthma\n';
+                patientContext += '5. Find LAB RESULTS: eosinophils, leukocytes, IgE\n';
+                patientContext += '6. Find QUESTIONNAIRES: SNOT-22, ACT, NOSE\n';
+                patientContext += '7. If you find data - use it EXACTLY as in the document\n';
+                patientContext += '8. If no data - write "no data for assessment"\n';
+                patientContext += '9. Do NOT invent data; use ONLY the documents above!\n\n';
             } else {
                 console.log('DEBUG: Patient has no documents');
-                patientContext += `ВНИМАНИЕ: У пациента нет загруженных документов.\n\n`;
+                patientContext += `ATTENTION: Patient has no uploaded documents.\n\n`;
             }
             
             patientContext += '='.repeat(80) + '\n\n';
@@ -1812,59 +1812,59 @@ class LMStudioClone {
         if (searchData && searchData.results && searchData.results.length > 0) {
             hasMemoRagData = true;
             memoragContext = '='.repeat(80) + '\n';
-            memoragContext += 'ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ (MemoRAG) - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\n';
+            memoragContext += 'KNOWLEDGE BASE FRAGMENTS (MemoRAG) - USE FOR YOUR ANSWER\n';
             memoragContext += '='.repeat(80) + '\n\n';
             
-            // Добавляем использованные подсказки ПЕРВЫМИ (самое важное для понимания контекста поиска)
+            // Add search clues first (most important for search context)
             if (searchData.clues_used && searchData.clues_used.length > 0) {
                 memoragContext += '-'.repeat(80) + '\n';
-                memoragContext += `🔍 ПОДСКАЗКИ MEMORAG ДЛЯ ПОИСКА (${searchData.clues_used.length} подсказок):\n`;
+                memoragContext += `🔍 MEMORAG SEARCH CLUES (${searchData.clues_used.length} clues):\n`;
                 memoragContext += '-'.repeat(80) + '\n';
-                memoragContext += 'ВАЖНО: Эти подсказки были автоматически сгенерированы MemoRAG для улучшения поиска.\n';
-                memoragContext += 'Они помогают понять, какие ключевые слова и концепции использовались при поиске.\n\n';
+                memoragContext += 'These clues were auto-generated by MemoRAG to improve search.\n';
+                memoragContext += 'They show which keywords and concepts were used for the search.\n\n';
                 searchData.clues_used.forEach((clue, index) => {
-                    memoragContext += `  Подсказка ${index + 1}: ${clue}\n`;
+                    memoragContext += `  Clue ${index + 1}: ${clue}\n`;
                 });
                 memoragContext += '\n' + '-'.repeat(80) + '\n\n';
                 console.log(`DEBUG: Added ${searchData.clues_used.length} clues`);
             }
             
-            // Добавляем контекст из памяти, если есть
+            // Add memory context if present
             if (searchData.memory_context && searchData.memory_context.length > 0) {
                 memoragContext += '-'.repeat(80) + '\n';
-                memoragContext += `💾 КОНТЕКСТ ИЗ ПАМЯТИ MEMORAG (${searchData.memory_context.length} фрагментов):\n`;
+                memoragContext += `💾 MEMORAG MEMORY CONTEXT (${searchData.memory_context.length} snippets):\n`;
                 memoragContext += '-'.repeat(80) + '\n';
-                memoragContext += 'Это сохраненные в памяти MemoRAG важные факты и концепции из предыдущих запросов.\n\n';
+                memoragContext += 'Saved MemoRAG facts and concepts from previous requests.\n\n';
                 searchData.memory_context.forEach((ctx, index) => {
-                    memoragContext += `  Фрагмент ${index + 1}: ${ctx}\n`;
+                    memoragContext += `  Snippet ${index + 1}: ${ctx}\n`;
                 });
                 memoragContext += '\n' + '-'.repeat(80) + '\n\n';
                 console.log(`DEBUG: Added ${searchData.memory_context.length} memory snippets`);
             }
             
-            // Добавляем найденные документы MemoRAG
+            // Add MemoRAG result documents
             memoragContext += '-'.repeat(80) + '\n';
-            memoragContext += `📄 РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ (${searchData.results.length} документов):\n`;
+            memoragContext += `📄 RELEVANT DOCUMENTS FROM KNOWLEDGE BASE (${searchData.results.length} documents):\n`;
             memoragContext += '-'.repeat(80) + '\n';
-            memoragContext += 'Это документы, найденные MemoRAG по подсказкам выше.\n\n';
+            memoragContext += 'Documents found by MemoRAG using the clues above.\n\n';
             searchData.results.forEach((result, index) => {
-                memoragContext += `[ДОКУМЕНТ ${index + 1}/${searchData.results.length}]\n`;
+                memoragContext += `[DOCUMENT ${index + 1}/${searchData.results.length}]\n`;
                 if (result.score !== undefined) {
-                    memoragContext += `Релевантность: ${(result.score * 100).toFixed(1)}%\n`;
+                    memoragContext += `Relevance: ${(result.score * 100).toFixed(1)}%\n`;
                 }
                 memoragContext += `${result.document}\n\n`;
             });
             console.log(`DEBUG: Added ${searchData.results.length} MemoRAG documents`);
             
             memoragContext += '='.repeat(80) + '\n';
-            memoragContext += 'КОНЕЦ ФРАГМЕНТОВ БАЗЫ ЗНАНИЙ (MemoRAG)\n';
+            memoragContext += 'END OF KNOWLEDGE BASE FRAGMENTS (MemoRAG)\n';
             memoragContext += '='.repeat(80) + '\n\n';
             
             const memoragContextLength = memoragContext.length;
             console.log(`DEBUG: MemoRAG context built: ${memoragContextLength} chars`);
             console.log(`DEBUG: MemoRAG context preview (first 500 chars):\n${memoragContext.substring(0, 500)}...`);
             
-            // Добавляем контекст MemoRAG как отдельное сообщение
+            // Add MemoRAG context as separate message
             messages.push({
                 role: 'user',
                 content: memoragContext
@@ -1882,10 +1882,10 @@ class LMStudioClone {
         
         // 4. Add chat history (recent messages)
         if (this.chatHistory.length > 0) {
-            let historyContext = '<<<История беседы>>>\n\n';
-            const recentHistory = this.chatHistory.slice(-10); // Последние 10 сообщений
+            let historyContext = '<<<Chat history>>>\n\n';
+            const recentHistory = this.chatHistory.slice(-10); // Last 10 messages
             recentHistory.forEach((msg, index) => {
-                historyContext += `${msg.role === 'user' ? 'Пользователь' : 'Ассистент'}: ${msg.content}\n\n`;
+                historyContext += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n\n`;
             });
             messages.push({
                 role: 'user',
@@ -1894,16 +1894,15 @@ class LMStudioClone {
         }
         
             // 5. Add user question with explicit reminder
-            // ВАЖНО: Формируем ТОЧНО так же, как в пакетном режиме (backend _format_final_user_message)
+            // Match batch mode format (backend _format_final_user_message)
             let finalUserMessage = userMessage;
             if (patientData && patientData.patient) {
-                // Используем тот же формат, что и в пакетном режиме
                 finalUserMessage = "\n" + "=".repeat(80) + "\n";
-                finalUserMessage += "ВАЖНО: ВЫШЕ В ЭТОМ ПРОМПТЕ ЕСТЬ БЛОК \"ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\"!\n";
-                finalUserMessage += "ТЫ ОБЯЗАН ИСПОЛЬЗОВАТЬ ЭТИ ДАННЫЕ ДЛЯ ОТВЕТА!\n";
+                finalUserMessage += "IMPORTANT: ABOVE IN THIS PROMPT THERE IS A \"PATIENT DATA - USE FOR YOUR ANSWER\" BLOCK!\n";
+                finalUserMessage += "YOU MUST USE THAT DATA TO ANSWER!\n";
                 finalUserMessage += "=".repeat(80) + "\n\n";
-                finalUserMessage += `ВОПРОС ПОЛЬЗОВАТЕЛЯ:\n${userMessage}\n\n`;
-                finalUserMessage += "ОТВЕТЬ НА ВОПРОС ИСПОЛЬЗУЯ ДАННЫЕ ПАЦИЕНТА ИЗ БЛОКА \"ДАННЫЕ ПАЦИЕНТА\" КОТОРЫЙ НАХОДИТСЯ ВЫШЕ!";
+                finalUserMessage += `USER QUESTION:\n${userMessage}\n\n`;
+                finalUserMessage += "ANSWER THE QUESTION USING THE PATIENT DATA FROM THE \"PATIENT DATA\" BLOCK ABOVE!";
             }
             
             messages.push({
@@ -1911,10 +1910,10 @@ class LMStudioClone {
                 content: finalUserMessage
             });
             
-            console.log(`DEBUG: Финальное сообщение пользователя: ${finalUserMessage.length} символов`);
-            console.log(`DEBUG: Предпросмотр финального сообщения (первые 500 символов):\n${finalUserMessage.substring(0, 500)}...`);
+            console.log(`DEBUG: Final user message: ${finalUserMessage.length} chars`);
+            console.log(`DEBUG: Final message preview (first 500 chars):\n${finalUserMessage.substring(0, 500)}...`);
         
-        // Логируем структуру промпта для отладки
+        // Log prompt structure for debugging
         this.logToConsole('📝 Prompt structure (total messages): ' + messages.length, 'info');
         let hasPatientData = false;
         let hasMemoRagDataInPrompt = false;
@@ -1927,26 +1926,26 @@ class LMStudioClone {
                 preview = preview.substring(0, 200) + '...';
             }
             
-            // Определяем тип сообщения для логирования
+            // Determine message type for logging
             let messageType = msg.role;
-            if (msg.content.includes('Данные пациента') || msg.content.includes('ДАННЫЕ ПАЦИЕНТА')) {
+            if (msg.content.includes('PATIENT DATA') || msg.content.includes('Patient data')) {
                 messageType = 'patient-data';
                 hasPatientData = true;
                 patientDataMessageIndex = index;
                 patientDataPreview = msg.content.substring(0, 300) + '...';
-            } else if (msg.content.includes('<<<Фрагменты базы знаний>>>') || msg.content.includes('ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ')) {
+            } else if (msg.content.includes('<<<Knowledge base fragments>>>') || msg.content.includes('KNOWLEDGE BASE FRAGMENTS')) {
                 messageType = 'knowledge-base-memorag';
                 hasMemoRagDataInPrompt = true;
-            } else if (msg.content.includes('<<<История беседы>>>')) {
+            } else if (msg.content.includes('<<<Chat history>>>')) {
                 messageType = 'chat-history';
             }
             
-            console.log(`DEBUG: Сообщение ${index + 1} [${messageType}]:`, {
+            console.log(`DEBUG: Message ${index + 1} [${messageType}]:`, {
                 role: msg.role,
                 contentLength: msg.content.length,
                 preview: preview.substring(0, 100),
-                hasMemoRagMarker: msg.content.includes('ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ') || msg.content.includes('<<<Фрагменты базы знаний>>>'),
-                hasPatientMarker: msg.content.includes('ДАННЫЕ ПАЦИЕНТА') || msg.content.includes('Данные пациента')
+                hasMemoRagMarker: msg.content.includes('KNOWLEDGE BASE FRAGMENTS') || msg.content.includes('<<<Knowledge base fragments>>>'),
+                hasPatientMarker: msg.content.includes('PATIENT DATA') || msg.content.includes('Patient data')
             });
             
             this.logToConsole(`  ${index + 1}. [${messageType}] Length: ${msg.content.length} chars`, 'info');
@@ -1957,16 +1956,16 @@ class LMStudioClone {
             }
         });
         
-        // Проверяем наличие данных пациента
+        // Check patient data presence
         if (hasPatientData) {
             this.logToConsole(`✅ ✓ ✓ ✓ Patient data present in prompt ✓ ✓ ✓`, 'success');
             this.logToConsole(`   Position in prompt: message #${patientDataMessageIndex + 1} of ${messages.length}`, 'info');
             this.logToConsole(`   Preview: ${patientDataPreview}`, 'info');
-            console.log(`DEBUG: ✓ ✓ ✓ Данные пациента найдены в промпте на позиции ${patientDataMessageIndex} ✓ ✓ ✓`);
+            console.log(`DEBUG: ✓ ✓ ✓ Patient data found in prompt at position ${patientDataMessageIndex} ✓ ✓ ✓`);
         } else {
             this.logToConsole('❌ ⚠ ⚠ ⚠ Patient data NOT found in prompt ⚠ ⚠ ⚠', 'error');
-            console.error('DEBUG: ❌ ❌ ❌ Данные пациента НЕ найдены в промпте ❌ ❌ ❌');
-            console.error('DEBUG: Проверьте:', {
+            console.error('DEBUG: ❌ ❌ ❌ Patient data NOT found in prompt ❌ ❌ ❌');
+            console.error('DEBUG: Check:', {
                 patientDataReceived: !!patientData,
                 patientExists: !!(patientData?.patient),
                 documentsCount: patientData?.documents?.length || 0,
@@ -1975,14 +1974,14 @@ class LMStudioClone {
             });
         }
         
-        // Проверяем наличие данных MemoRAG
+        // Check MemoRAG data presence
         if (hasMemoRagDataInPrompt) {
             this.logToConsole('✅ ✓ ✓ ✓ MemoRAG data present in prompt ✓ ✓ ✓', 'success');
-            console.log('DEBUG: ✓ ✓ ✓ Данные MemoRAG найдены в промпте ✓ ✓ ✓');
+            console.log('DEBUG: ✓ ✓ ✓ MemoRAG data found in prompt ✓ ✓ ✓');
         } else {
             this.logToConsole('❌ ⚠ ⚠ ⚠ MemoRAG data NOT found in prompt ⚠ ⚠ ⚠', 'error');
-            console.error('DEBUG: ❌ ❌ ❌ Данные MemoRAG НЕ найдены в промпте ❌ ❌ ❌');
-            console.error('DEBUG: Проверьте:', {
+            console.error('DEBUG: ❌ ❌ ❌ MemoRAG data NOT found in prompt ❌ ❌ ❌');
+            console.error('DEBUG: Check:', {
                 searchDataReceived: !!searchData,
                 searchDataStatus: searchData?.status,
                 resultsCount: searchData?.results?.length || 0,
@@ -1990,34 +1989,34 @@ class LMStudioClone {
             });
         }
         
-        // Отправляем запрос с правильной структурой
+        // Send request with correct structure
         await this.sendMessageStreamWithStructure(messages);
     }
 
     async sendMessageStreamWithStructure(messages) {
-        // Проверяем состояние модели перед отправкой
+        // Check model state before sending
         if (!this.currentModel) {
             throw new Error('Model not loaded. Load a model first.');
         }
         
-        // Дополнительная проверка: ищем данные пациента в сообщениях перед отправкой
+        // Verify patient data is in messages before sending
         let hasPatientDataInMessages = false;
         messages.forEach((msg, idx) => {
             const contentUpper = msg.content.toUpperCase();
-            if (contentUpper.includes('ДАННЫЕ ПАЦИЕНТА') || 
-                contentUpper.includes('МЕДИЦИНСКИЕ ДОКУМЕНТЫ') ||
-                (contentUpper.includes('ПАЦИЕНТ:') && contentUpper.includes('ДОКУМЕНТ'))) {
+            if (contentUpper.includes('PATIENT DATA') || 
+                contentUpper.includes('MEDICAL DOCUMENTS') ||
+                (contentUpper.includes('PATIENT:') && contentUpper.includes('DOCUMENT'))) {
                 hasPatientDataInMessages = true;
-                console.log(`DEBUG: ✓ Данные пациента найдены в сообщении ${idx}, длина: ${msg.content.length}`);
+                console.log(`DEBUG: ✓ Patient data found in message ${idx}, length: ${msg.content.length}`);
             }
         });
         
         if (hasPatientDataInMessages) {
-            console.log('DEBUG: ✓ ✓ ✓ Данные пациента подтверждены перед отправкой на сервер ✓ ✓ ✓');
+            console.log('DEBUG: ✓ ✓ ✓ Patient data confirmed before sending to server ✓ ✓ ✓');
             this.logToConsole('✓ Patient data confirmed before sending', 'success');
         } else {
-            console.error('DEBUG: ❌ ❌ ❌ КРИТИЧЕСКАЯ ОШИБКА: Данные пациента НЕ найдены в сообщениях перед отправкой ❌ ❌ ❌');
-            console.error('DEBUG: Структура сообщений:', messages.map((m, i) => ({
+            console.error('DEBUG: ❌ ❌ ❌ CRITICAL: Patient data NOT found in messages before sending ❌ ❌ ❌');
+            console.error('DEBUG: Message structure:', messages.map((m, i) => ({
                 index: i,
                 role: m.role,
                 contentLength: m.content.length,
@@ -2026,7 +2025,7 @@ class LMStudioClone {
             this.logToConsole('❌ WARNING: Patient data not found in messages before sending!', 'error');
         }
         
-        // Отправляем запрос к LLM с готовой структурой сообщений
+        // Send request to LLM with prepared message structure
         const requestData = {
             model: this.currentModel,
             messages: messages,
@@ -2037,62 +2036,59 @@ class LMStudioClone {
             stream: true
         };
         
-        // Используем единый API для всех моделей
+        // Use unified API for all models
         const url = `${this.apiBaseUrl}/v1/chat/completions`;
         
-        // Форматируем промпт для отображения (как он будет отправлен в Ollama)
+        // Format prompt for display (as sent to Ollama)
         const formattedPrompt = this.formatMessagesForOllama(messages);
         
-        // Проверяем наличие данных MemoRAG в финальном промпте
-        const hasMemoRagInFinalPrompt = formattedPrompt.includes('ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ') || 
-                                         formattedPrompt.includes('<<<Фрагменты базы знаний>>>') ||
-                                         formattedPrompt.includes('РЕЛЕВАНТНЫЕ ДОКУМЕНТЫ ИЗ БАЗЫ ЗНАНИЙ') ||
-                                         formattedPrompt.includes('Релевантные документы:');
-        const hasPatientDataInFinalPrompt = formattedPrompt.includes('ДАННЫЕ ПАЦИЕНТА') || 
-                                            formattedPrompt.includes('Данные пациента') ||
-                                            formattedPrompt.includes('МЕДИЦИНСКИЕ ДОКУМЕНТЫ');
+        // Check MemoRAG and patient data in final prompt
+        const hasMemoRagInFinalPrompt = formattedPrompt.includes('KNOWLEDGE BASE FRAGMENTS') || 
+                                         formattedPrompt.includes('<<<Knowledge base fragments>>>') ||
+                                         formattedPrompt.includes('RELEVANT DOCUMENTS FROM KNOWLEDGE BASE') ||
+                                         formattedPrompt.includes('Relevant documents:');
+        const hasPatientDataInFinalPrompt = formattedPrompt.includes('PATIENT DATA') || 
+                                            formattedPrompt.includes('Patient data') ||
+                                            formattedPrompt.includes('MEDICAL DOCUMENTS');
         
-        // Детальное логирование структуры промпта
+        // Detailed prompt structure logging
         console.log('='.repeat(80));
-        console.log('📝 ПОЛНЫЙ ПРОМПТ ДЛЯ OLLAMA (ФИНАЛЬНАЯ ПРОВЕРКА):');
+        console.log('📝 FULL PROMPT FOR OLLAMA (FINAL CHECK):');
         console.log('='.repeat(80));
-        console.log(`Длина промпта: ${formattedPrompt.length} символов`);
-        console.log(`Количество сообщений: ${messages.length}`);
-        console.log(`✓ Данные пациента в промпте: ${hasPatientDataInFinalPrompt ? 'ДА ✓' : 'НЕТ ❌'}`);
-        console.log(`✓ Данные MemoRAG в промпте: ${hasMemoRagInFinalPrompt ? 'ДА ✓' : 'НЕТ ❌'}`);
+        console.log(`Prompt length: ${formattedPrompt.length} chars`);
+        console.log(`Message count: ${messages.length}`);
+        console.log(`✓ Patient data in prompt: ${hasPatientDataInFinalPrompt ? 'YES ✓' : 'NO ❌'}`);
+        console.log(`✓ MemoRAG data in prompt: ${hasMemoRagInFinalPrompt ? 'YES ✓' : 'NO ❌'}`);
         console.log('='.repeat(80));
         
         if (hasMemoRagInFinalPrompt) {
-            // Находим позицию данных MemoRAG
-            const memoragIndex = formattedPrompt.search(/ФРАГМЕНТЫ БАЗЫ ЗНАНИЙ|<<<Фрагменты базы знаний>>>/);
+            const memoragIndex = formattedPrompt.search(/KNOWLEDGE BASE FRAGMENTS|<<<Knowledge base fragments>>>/);
             if (memoragIndex !== -1) {
                 const memoragPreview = formattedPrompt.substring(memoragIndex, memoragIndex + 500);
-                console.log('DEBUG: Предпросмотр данных MemoRAG в промпте:');
+                console.log('DEBUG: MemoRAG data preview in prompt:');
                 console.log(memoragPreview);
             }
         } else {
-            console.warn('DEBUG: ⚠️ Данные MemoRAG НЕ найдены в финальном промпте!');
+            console.warn('DEBUG: ⚠️ MemoRAG data NOT found in final prompt!');
         }
         
         if (hasPatientDataInFinalPrompt) {
-            const patientIndex = formattedPrompt.search(/ДАННЫЕ ПАЦИЕНТА|Данные пациента/);
+            const patientIndex = formattedPrompt.search(/PATIENT DATA|Patient data/);
             if (patientIndex !== -1) {
                 const patientPreview = formattedPrompt.substring(patientIndex, patientIndex + 500);
-                console.log('DEBUG: Предпросмотр данных пациента в промпте:');
+                console.log('DEBUG: Patient data preview in prompt:');
                 console.log(patientPreview);
             }
         }
         
         console.log('='.repeat(80));
-        console.log('📝 ПОЛНЫЙ ПРОМПТ:');
+        console.log('📝 FULL PROMPT:');
         console.log('='.repeat(80));
         console.log(formattedPrompt);
         console.log('='.repeat(80));
         
-        // Выводим промпт в консоль интерфейса
         this.logToConsole(`📝 Full prompt for Ollama (${formattedPrompt.length} chars):`, 'info');
         
-        // Проверка наличия данных в финальном промпте
         if (hasMemoRagInFinalPrompt) {
             this.logToConsole('✅ MemoRAG data found in final prompt ✓', 'success');
         } else {
@@ -2105,36 +2101,33 @@ class LMStudioClone {
             this.logToConsole('❌ Patient data NOT found in final prompt ⚠️', 'warning');
         }
         
-        // Показываем промпт в интерфейсе (если контейнер существует)
+        // Show prompt in UI if container exists
         if (this.promptPreviewContainer && this.promptPreviewText) {
             this.promptPreviewText.value = formattedPrompt;
             this.promptPreviewContainer.style.display = 'block';
-            console.log('DEBUG: Промпт отображен в интерфейсе');
+            console.log('DEBUG: Prompt displayed in UI');
         } else {
-            // Fallback - ищем элементы напрямую
             const promptPreviewContainer = document.getElementById('promptPreviewContainer');
             const promptPreviewText = document.getElementById('promptPreviewText');
             if (promptPreviewContainer && promptPreviewText) {
                 promptPreviewText.value = formattedPrompt;
                 promptPreviewContainer.style.display = 'block';
-                console.log('DEBUG: Промпт отображен в интерфейсе (fallback)');
+                console.log('DEBUG: Prompt displayed in UI (fallback)');
             }
         }
         
-        // Показываем первые 500 символов в консоли
         const promptPreview = formattedPrompt.substring(0, 500);
         this.logToConsole(`   ${promptPreview}...`, 'info');
         this.logToConsole(`   (Full prompt is also shown above and in the browser console (F12))`, 'info');
         
-        console.log('Отправляем запрос с MemoRAG контекстом:', { url, requestData });
+        console.log('Sending request with MemoRAG context:', { url, requestData });
         this.logToConsole(`📤 Sending request to model: ${this.currentModel}`, 'info');
         
-        // Создаем сообщение ассистента
         const assistantMessageElement = this.addMessage('', 'assistant');
         this.isStreaming = true;
         
         try {
-            // Отправляем POST запрос для получения потока
+            // Send POST request for stream
             const response = await this.fetchWithTimeout(url, {
                 method: 'POST',
                 headers: {
@@ -2143,15 +2136,15 @@ class LMStudioClone {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Получен ответ:', response.status, response.statusText);
+            console.log('Response received:', response.status, response.statusText);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Ошибка ответа:', errorText);
+                console.error('Response error:', errorText);
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
             
-            // Обрабатываем поток
+            // Process stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -2162,23 +2155,23 @@ class LMStudioClone {
                 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Сохраняем неполную строку
+                buffer = lines.pop(); // Keep incomplete line
                 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
                             const data = JSON.parse(line.slice(6));
-                            console.log('Получен SSE чанк:', data);
+                            console.log('SSE chunk received:', data);
                             this.handleStreamEvent(data, assistantMessageElement);
                         } catch (e) {
-                            console.warn('Ошибка парсинга SSE:', e, 'Строка:', line);
+                            console.warn('SSE parse error:', e, 'Line:', line);
                         }
                     }
                 }
             }
             
         } catch (error) {
-            console.error('Ошибка потоковой генерации:', error);
+            console.error('Stream generation error:', error);
             assistantMessageElement.querySelector('.message-content').textContent = `Error: ${error.message}`;
         } finally {
             this.isStreaming = false;
@@ -2187,16 +2180,15 @@ class LMStudioClone {
     async sendMessageStream(message) {
         const messages = [];
         
-        // Добавляем системный промпт если включен
-        // ВАЖНО: Используем ТОЛЬКО из поля System Prompt в интерфейсе, без изменений
+        // Add system prompt if enabled (from System Prompt field, unchanged)
         if (this.useSystemPrompt.checked && this.systemPrompt.value.trim()) {
             const systemContent = this.systemPrompt.value.trim();
             messages.push({
                 role: 'system',
-                content: systemContent  // Используем БЕЗ ИЗМЕНЕНИЙ
+                content: systemContent
             });
             this.logToConsole(`📋 System prompt applied (${systemContent.length} chars)`, 'info');
-            console.log('DEBUG: sendMessageStream - системный промпт:', {
+            console.log('DEBUG: sendMessageStream - system prompt:', {
                 length: systemContent.length,
                 preview: systemContent.substring(0, 200)
             });
@@ -2204,8 +2196,8 @@ class LMStudioClone {
             this.logToConsole('⚠️ System prompt not applied', 'warning');
         }
         
-        // Добавляем данные пациента, если включены
-        console.log('DEBUG: Проверка данных пациента:', {
+        // Add patient data if enabled
+        console.log('DEBUG: Patient data check:', {
             usePatientData: this.usePatientData,
             checked: this.usePatientData?.checked,
             chatPatientSelect: this.chatPatientSelect,
@@ -2217,68 +2209,66 @@ class LMStudioClone {
                 const patientIdValue = this.chatPatientSelect.value;
                 const patientId = parseInt(patientIdValue);
                 
-                // Валидация ID пациента
+                // Validate patient ID
                 if (isNaN(patientId) || patientId <= 0) {
-                    console.error(`DEBUG: Некорректный ID пациента: "${patientIdValue}" -> ${patientId}`);
+                    console.error(`DEBUG: Invalid patient ID: "${patientIdValue}" -> ${patientId}`);
                     this.logToConsole(`❌ Invalid patient ID: "${patientIdValue}". Select a patient from the list.`, 'error');
                     this.showNotification('Select a valid patient from the list!', 'error');
-                    // Продолжаем без данных пациента
+                    // Continue without patient data
                 } else {
-                    console.log(`DEBUG: Загружаем данные пациента ID=${patientId}`);
+                    console.log(`DEBUG: Loading patient data ID=${patientId}`);
                     const patientResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients/${patientId}/full`, {}, 10000);
                     
                     if (patientResponse.ok) {
                         const patientData = await patientResponse.json();
-                        console.log('DEBUG: Данные пациента получены:', {
+                        console.log('DEBUG: Patient data received:', {
                             patient: patientData.patient?.name,
                             documentsCount: patientData.documents?.length
                         });
                         
                         if (patientData && patientData.patient) {
-                        // Используем тот же формат, что и в MemoRAG для единообразия
+                        // Same format as MemoRAG for consistency
                         let patientContext = '\n' + '='.repeat(80) + '\n';
-                        patientContext += 'ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА\n';
+                        patientContext += 'PATIENT DATA - USE FOR YOUR ANSWER\n';
                         patientContext += '='.repeat(80) + '\n\n';
                         
-                        // Добавляем основную информацию о пациенте
                         const patient = patientData.patient;
-                        patientContext += `ПАЦИЕНТ:\n`;
-                        patientContext += `  Имя: ${patient.name}\n`;
-                        if (patient.age) patientContext += `  Возраст: ${patient.age} лет\n`;
-                        if (patient.gender) patientContext += `  Пол: ${patient.gender}\n`;
-                        if (patient.notes) patientContext += `  Заметки: ${patient.notes}\n`;
-                        patientContext += `  Дата создания: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
+                        patientContext += `PATIENT:\n`;
+                        patientContext += `  Name: ${patient.name}\n`;
+                        if (patient.age) patientContext += `  Age: ${patient.age} years\n`;
+                        if (patient.gender) patientContext += `  Gender: ${patient.gender}\n`;
+                        if (patient.notes) patientContext += `  Notes: ${patient.notes}\n`;
+                        patientContext += `  Created: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
                         
-                        // Добавляем документы пациента
                         if (patientData.documents && patientData.documents.length > 0) {
-                            patientContext += `МЕДИЦИНСКИЕ ДОКУМЕНТЫ (${patientData.documents.length} документов):\n\n`;
-                            patientContext += `ВНИМАНИЕ: В этих документах могут быть данные для оценки показателей!\n`;
-                            patientContext += `ОБЯЗАТЕЛЬНО ищи в каждом документе:\n`;
-                            patientContext += `  1. NPS (степень полипов 0-8) - ищи упоминания полипов, оценок полипов, степени выраженности\n`;
-                            patientContext += `  2. SNOT-22 (0-110) - ищи анкеты SNOT-22, оценки симптомов, баллы\n`;
-                            patientContext += `  3. Контроль ПРС (EPOS 2020) - ищи диагнозы риносинусит, ПРС, контроль\n`;
-                            patientContext += `  4. T2-воспаление - ищи эозинофилы (EOS), IgE, FeNO, упоминания астмы, AERD\n`;
-                            patientContext += `  5. ACT (контроль астмы ≤19/20-24/25) - ищи анкеты ACT, контроль астмы\n`;
-                            patientContext += `  6. Любые числа, показатели, анализы, обследования\n\n`;
+                            patientContext += `MEDICAL DOCUMENTS (${patientData.documents.length} documents):\n\n`;
+                            patientContext += `ATTENTION: These documents may contain data for outcome assessment!\n`;
+                            patientContext += `Look in each document for:\n`;
+                            patientContext += `  1. NPS (polyp score 0-8) - polyp mentions, polyp scores, severity\n`;
+                            patientContext += `  2. SNOT-22 (0-110) - SNOT-22 questionnaires, symptom scores\n`;
+                            patientContext += `  3. CRS control (EPOS 2020) - rhinosinusitis, CRS, control\n`;
+                            patientContext += `  4. T2 inflammation - eosinophils (EOS), IgE, FeNO, asthma, AERD\n`;
+                            patientContext += `  5. ACT (asthma control ≤19/20-24/25) - ACT questionnaires\n`;
+                            patientContext += `  6. Any numbers, scores, labs, examinations\n\n`;
                             
                             patientData.documents.forEach((doc, index) => {
                                 const content = (doc && typeof doc.content === 'string') ? this.stripEmptyLines(doc.content) : '';
-                                patientContext += `\n[ДОКУМЕНТ ${index + 1}/${patientData.documents.length}] Тип: ${doc.document_type}\n`;
-                                patientContext += (content ? content + '\n' : '[Содержимое документа отсутствует]\n');
+                                patientContext += `\n[DOCUMENT ${index + 1}/${patientData.documents.length}] Type: ${doc.document_type}\n`;
+                                patientContext += (content ? content + '\n' : '[Document content missing]\n');
                             });
                             
-                            patientContext += '\nИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ ДОКУМЕНТОВ:\n';
-                            patientContext += '1. Прочитай ВСЕ документы выше ОЧЕНЬ ВНИМАТЕЛЬНО\n';
-                            patientContext += '2. Найди в документах УПОМИНАНИЯ показателей: NPS, SNOT-22, эозинофилы, IgE, FeNO, астма, ACT\n';
-                            patientContext += '3. Найди ЧИСЛА и ПОКАЗАТЕЛИ, которые могут относиться к оценке\n';
-                            patientContext += '4. Найди ДИАГНОЗЫ: риносинусит, ПРС, полипы, астма\n';
-                            patientContext += '5. Найди РЕЗУЛЬТАТЫ анализов: эозинофилы, лейкоциты, IgE\n';
-                            patientContext += '6. Найди АНКЕТЫ: SNOT-22, ACT, NOSE, опросники\n';
-                            patientContext += '7. Если нашел данные - используй их ТОЧНО как указано в документе\n';
-                            patientContext += '8. Если данных нет - пиши "нет данных для оценки"\n';
-                            patientContext += '9. НЕ придумывай данные, НЕ используй общие знания - только из документов выше!\n\n';
+                            patientContext += '\nINSTRUCTIONS FOR USING DOCUMENTS:\n';
+                            patientContext += '1. Read ALL documents above VERY CAREFULLY\n';
+                            patientContext += '2. Find MENTIONS of: NPS, SNOT-22, eosinophils, IgE, FeNO, asthma, ACT\n';
+                            patientContext += '3. Find NUMBERS and SCORES that may relate to assessment\n';
+                            patientContext += '4. Find DIAGNOSES: rhinosinusitis, CRS, polyps, asthma\n';
+                            patientContext += '5. Find LAB RESULTS: eosinophils, leukocytes, IgE\n';
+                            patientContext += '6. Find QUESTIONNAIRES: SNOT-22, ACT, NOSE\n';
+                            patientContext += '7. If you find data - use it EXACTLY as in the document\n';
+                            patientContext += '8. If no data - write "no data for assessment"\n';
+                            patientContext += '9. Do NOT invent data; use ONLY the documents above!\n\n';
                         } else {
-                            patientContext += `ВНИМАНИЕ: У пациента нет загруженных документов.\n\n`;
+                            patientContext += `ATTENTION: Patient has no uploaded documents.\n\n`;
                         }
                         
                         patientContext += '='.repeat(80) + '\n\n';
@@ -2296,7 +2286,7 @@ class LMStudioClone {
                             this.logToConsole('⚠️ Patient data received but patient info is missing', 'warning');
                         }
                     } else {
-                        // Улучшенная обработка ошибок
+                        // Improved error handling
                         let errorDetail = '';
                         try {
                             const errorData = await patientResponse.json();
@@ -2310,11 +2300,9 @@ class LMStudioClone {
                         if (patientResponse.status === 404) {
                             this.logToConsole(`❌ Patient ID=${patientId} not found in the database. It may have been deleted or the ID is invalid.`, 'error');
                             this.showNotification(`Patient ID=${patientId} not found. Refreshing patient list...`, 'error');
-                            // Обновляем список пациентов и сбрасываем выбор
                             if (this.chatPatientSelect) {
                                 this.chatPatientSelect.value = '';
                             }
-                            // Обновляем список пациентов в выпадающем списке
                             try {
                                 await this.loadPatientsForChat();
                                 this.logToConsole('📋 Patient list updated', 'info');
@@ -2340,9 +2328,9 @@ class LMStudioClone {
             });
         }
         
-        // Добавляем историю беседы ПОСЛЕ данных пациента (чтобы не перекрывать их)
+        // Add chat history AFTER patient data (so it doesn't override it)
         if (this.chatHistory.length > 0) {
-            const recentHistory = this.chatHistory.slice(-10); // Последние 10 сообщений
+            const recentHistory = this.chatHistory.slice(-10); // Last 10 messages
             recentHistory.forEach(msg => {
                 messages.push({
                     role: msg.role,
@@ -2351,15 +2339,15 @@ class LMStudioClone {
             });
         }
         
-        // Добавляем текущее сообщение пользователя с явным указанием на данные пациента
+        // Add current user message with explicit patient-data reminder
         let finalMessage = message;
-        if (messages.some(msg => msg.content && msg.content.includes('ДАННЫЕ ПАЦИЕНТА'))) {
+        if (messages.some(msg => msg.content && msg.content.includes('PATIENT DATA'))) {
             finalMessage = `\n${'='.repeat(80)}\n`;
-            finalMessage += `ВАЖНО: ВЫШЕ В ЭТОМ ПРОМПТЕ ЕСТЬ БЛОК "ДАННЫЕ ПАЦИЕНТА - ОБЯЗАТЕЛЬНО ИСПОЛЬЗУЙ ДЛЯ ОТВЕТА"!\n`;
-            finalMessage += `ТЫ ОБЯЗАН ИСПОЛЬЗОВАТЬ ЭТИ ДАННЫЕ ДЛЯ ОТВЕТА!\n`;
+            finalMessage += `IMPORTANT: ABOVE IN THIS PROMPT THERE IS A "PATIENT DATA - USE FOR YOUR ANSWER" BLOCK!\n`;
+            finalMessage += `YOU MUST USE THAT DATA TO ANSWER!\n`;
             finalMessage += `${'='.repeat(80)}\n\n`;
-            finalMessage += `ВОПРОС ПОЛЬЗОВАТЕЛЯ:\n${message}\n\n`;
-            finalMessage += `ОТВЕТЬ НА ВОПРОС ИСПОЛЬЗУЯ ДАННЫЕ ПАЦИЕНТА ИЗ БЛОКА "ДАННЫЕ ПАЦИЕНТА" КОТОРЫЙ НАХОДИТСЯ ВЫШЕ!`;
+            finalMessage += `USER QUESTION:\n${message}\n\n`;
+            finalMessage += `ANSWER THE QUESTION USING THE PATIENT DATA FROM THE "PATIENT DATA" BLOCK ABOVE!`;
             
             console.log(`DEBUG: Patient data detected in prompt, adding explicit reminder to final message`);
         }
@@ -2381,17 +2369,15 @@ class LMStudioClone {
             stream: true
         };
         
-        // Используем единый API для всех моделей
         const url = `${this.apiBaseUrl}/v1/chat/completions`;
         
         console.log('Sending request:', { url, requestData });
         
-        // Создаем сообщение ассистента
         const assistantMessageElement = this.addMessage('', 'assistant');
         this.isStreaming = true;
         
         try {
-            // Отправляем POST запрос для получения потока
+            // Send POST request for stream
             const response = await this.fetchWithTimeout(url, {
                 method: 'POST',
                 headers: {
@@ -2400,15 +2386,15 @@ class LMStudioClone {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Получен ответ:', response.status, response.statusText);
+            console.log('Response received:', response.status, response.statusText);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Ошибка ответа:', errorText);
+                console.error('Response error:', errorText);
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
             
-            // Обрабатываем поток
+            // Process stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -2419,23 +2405,23 @@ class LMStudioClone {
                 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Сохраняем неполную строку
+                buffer = lines.pop(); // Keep incomplete line
                 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         try {
                             const data = JSON.parse(line.slice(6));
-                            console.log('Получен SSE чанк:', data);
+                            console.log('SSE chunk received:', data);
                             this.handleStreamEvent(data, assistantMessageElement);
                         } catch (e) {
-                            console.warn('Ошибка парсинга SSE:', e, 'Строка:', line);
+                            console.warn('SSE parse error:', e, 'Line:', line);
                         }
                     }
                 }
             }
             
         } catch (error) {
-            console.error('Ошибка потоковой генерации:', error);
+            console.error('Stream generation error:', error);
             assistantMessageElement.querySelector('.message-content').textContent = `Error: ${error.message}`;
         } finally {
             this.isStreaming = false;
@@ -2446,22 +2432,21 @@ class LMStudioClone {
         const contentElement = messageElement.querySelector('.entry-content');
         
         if (!contentElement) {
-            console.error('Не найден элемент .entry-content в сообщении:', messageElement);
+            console.error('.entry-content element not found in message:', messageElement);
         this.logToConsole('❌ Error: message content element not found', 'error');
             return;
         }
         
-        console.log('Обрабатываем событие:', data.type, data);
-        console.log('Полные данные события:', JSON.stringify(data, null, 2));
+        console.log('Processing event:', data.type, data);
+        console.log('Full event data:', JSON.stringify(data, null, 2));
         this.logToConsole(`📡 Stream event: ${data.type}`, 'info');
         
         switch (data.type) {
             case 'start':
-                // Начало генерации
                 contentElement.textContent = '';
-                console.log('Начало генерации');
+                console.log('Generation started');
                 
-                // Проверяем, является ли модель тяжелой
+                // Check if model is heavy
                 if (data.heavy_model) {
                     contentElement.textContent = data.message || 'Loading a heavy model, this may take a while...';
                     this.logToConsole(`🐌 Heavy model: ${data.message || 'Loading...'}`, 'info');
@@ -2472,48 +2457,40 @@ class LMStudioClone {
                 break;
                 
             case 'chunk':
-                // Добавляем новый чанк текста
                 contentElement.textContent += data.content;
-                console.log('Добавлен чанк:', data.content);
+                console.log('Chunk added:', data.content);
                 
-                // Обновляем историю чата с накопленным содержимым
                 const lastMessage = this.chatHistory[this.chatHistory.length - 1];
                 if (lastMessage && lastMessage.role === 'assistant') {
                     lastMessage.content = contentElement.textContent;
                 }
-                // Автопрокрутка вниз при приходе чанка
                 this.scrollToBottom();
                 break;
                 
             case 'end':
-                // Генерация завершена
-                console.log('Потоковая генерация завершена');
+                console.log('Stream generation complete');
                 this.streamingIndicator.style.display = 'none';
                 
-                // Устанавливаем полный ответ, если он есть
                 if (data.full_response) {
                     contentElement.textContent = data.full_response;
-                    console.log('Установлен полный ответ:', data.full_response);
-                    console.log('Элемент содержимого:', contentElement);
-                    console.log('Текущий текст элемента:', contentElement.textContent);
+                    console.log('Full response set:', data.full_response);
+                    console.log('Content element:', contentElement);
+                    console.log('Current element text:', contentElement.textContent);
                     
-                    // Обновляем историю чата с полным ответом
                     const lastMessage = this.chatHistory[this.chatHistory.length - 1];
                     if (lastMessage && lastMessage.role === 'assistant') {
                         lastMessage.content = data.full_response;
-                        console.log('Обновлена история чата с полным ответом');
+                        console.log('Chat history updated with full response');
                     }
                 } else {
-                    console.log('Полный ответ не найден в данных:', data);
+                    console.log('Full response not found in data:', data);
                     
-                    // Обновляем историю чата с текущим содержимым элемента
                     const lastMsg = this.chatHistory[this.chatHistory.length - 1];
                     if (lastMsg && lastMsg.role === 'assistant') {
                         lastMsg.content = contentElement.textContent;
-                        console.log('Обновлена история чата с содержимым элемента:', contentElement.textContent);
+                        console.log('Chat history updated with element content:', contentElement.textContent);
                     }
                 }
-                // Автопрокрутка вниз по завершении
                 this.scrollToBottom();
                 break;
             
@@ -2523,7 +2500,7 @@ class LMStudioClone {
     }
     
     formatMessagesForOllama(messages) {
-        // Форматируем сообщения для Ollama
+        // Format messages for Ollama
         let prompt = '';
         for (const message of messages) {
             if (message.role === 'system') {
@@ -2539,8 +2516,8 @@ class LMStudioClone {
     }
 
     async sendMessageToLocalAPI(message) {
-        // Показываем полный промпт в предпросмотре
-        // Готовим сообщения и удаляем только пустые строки
+        // Show full prompt in preview
+        // Build messages and strip only empty lines
         const previewMessages = this.buildMessages(message).map(m => ({
             ...m,
             content: this.stripEmptyLines(m.content)
@@ -2561,10 +2538,10 @@ class LMStudioClone {
                 top_p: parseFloat(this.topP.value),
                 top_k: parseInt(this.topK.value)
             })
-        }, 30000); // 30 секунд для генерации текста
+        }, 30000); // 30 s for text generation
         const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const ms = Math.round(t1 - t0);
-        try { this.logToConsole(`⏱️ Chat LocalAPI: ${ms} мс`, 'info'); } catch(_) { console.log('Chat LocalAPI ms=', ms); }
+        try { this.logToConsole(`⏱️ Chat LocalAPI: ${ms} ms`, 'info'); } catch(_) { console.log('Chat LocalAPI ms=', ms); }
         const data = await response.json();
         
         if (response.ok) {
@@ -2572,12 +2549,12 @@ class LMStudioClone {
             this.addMessage(assistantMessage, 'assistant');
             this.logToConsole(`Response received (${data.usage.total_tokens} tokens)`, 'success');
         } else {
-            this.addMessage(`Ошибка: ${data.detail}`, 'system');
+            this.addMessage(`Error: ${data.detail}`, 'system');
             this.logToConsole(`API error: ${data.detail}`, 'error');
         }
     }
 
-    // Унифицированный вызов чат-совместимого эндпоинта с произвольными messages и настраиваемым таймаутом
+    // Unified chat-compatible request with arbitrary messages and configurable timeout
     async requestChatCompletions(messages, timeoutMs = 300000) {
         const payload = {
             model: this.currentModel,
@@ -2595,11 +2572,11 @@ class LMStudioClone {
         }, timeoutMs);
         const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const ms = Math.round(t1 - t0);
-        try { this.logToConsole(`⏱️ requestChatCompletions: ${ms} мс`, 'info'); } catch(_) {}
+        try { this.logToConsole(`⏱️ requestChatCompletions: ${ms} ms`, 'info'); } catch(_) {}
         return resp;
     }
 
-    // Потоковый чат-совместимый вызов (OpenAI-like stream), собирает полный ответ в строку
+    // Streaming chat-compatible call (OpenAI-like stream), collects full response into string
     async requestChatCompletionsStream(messages, timeoutMs = 300000) {
         const controller = new AbortController();
         const to = setTimeout(() => controller.abort(), timeoutMs);
@@ -2629,7 +2606,7 @@ class LMStudioClone {
                 const { value, done } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value, { stream: true });
-                // Разбираем SSE: строки вида "data: {...}"
+                // Parse SSE: lines like "data: {...}"
                 const lines = chunk.split(/\r?\n/);
                 for (const line of lines) {
                     const trimmed = line.trim();
@@ -2649,7 +2626,7 @@ class LMStudioClone {
         }
     }
 
-    // Потоковый вызов Ollama, собирает ответ целиком (через /ollama/generate с stream=true)
+    // Streaming Ollama call, collects full response (via /ollama/generate with stream=true)
     async requestOllamaGenerateStream(fullPrompt, timeoutMs = 300000) {
         const controller = new AbortController();
         const to = setTimeout(() => controller.abort(), timeoutMs);
@@ -2679,7 +2656,7 @@ class LMStudioClone {
                 const { value, done } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value, { stream: true });
-                // Ответ бэкенда для стрима Ollama должен содержать JSON-строки с полем response
+                // Backend response for Ollama stream must contain JSON lines with response field
                 const lines = chunk.split(/\r?\n/).filter(Boolean);
                 for (const line of lines) {
                     try {
@@ -2695,7 +2672,7 @@ class LMStudioClone {
         }
     }
 
-    // Унифицированный вызов Ollama генерации (как в чате), без добавления сообщений в UI
+    // Unified Ollama generate call (as in chat), without adding messages to UI
     async requestOllamaGenerate(fullPrompt, timeoutMs = 300000) {
         const modelName = (this.currentModel || '').replace('ollama:', '');
         const payload = {
@@ -2714,14 +2691,14 @@ class LMStudioClone {
         }, timeoutMs);
         const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const ms = Math.round(t1 - t0);
-        try { this.logToConsole(`⏱️ requestOllamaGenerate: ${ms} мс`, 'info'); } catch(_) {}
+        try { this.logToConsole(`⏱️ requestOllamaGenerate: ${ms} ms`, 'info'); } catch(_) {}
         return resp;
     }
 
     async sendMessageToOllama(message) {
         const modelName = this.currentModel.replace('ollama:', '');
         
-        // Строим промпт с системным сообщением
+        // Build prompt with system message
         let fullPrompt = this.stripEmptyLines(message);
         if (this.useSystemPrompt.checked && this.systemPrompt.value.trim()) {
             const systemContent = this.systemPrompt.value.trim();
@@ -2731,7 +2708,7 @@ class LMStudioClone {
             this.logToConsole('⚠️ System prompt not applied for Ollama', 'warning');
         }
 
-        // Предпросмотр полного промпта для Ollama
+        // Full prompt preview for Ollama
         this.showFullPromptPreviewFromText(fullPrompt);
         
         const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -2748,10 +2725,10 @@ class LMStudioClone {
                 top_k: parseInt(this.topK.value),
                 num_predict: parseInt(this.maxTokens.value)
             })
-        }, 30000); // 30 секунд для Ollama генерации
+        }, 30000); // 30 s for Ollama generation
         const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const ms = Math.round(t1 - t0);
-        try { this.logToConsole(`⏱️ Chat Ollama: ${ms} мс`, 'info'); } catch(_) { console.log('Chat Ollama ms=', ms); }
+        try { this.logToConsole(`⏱️ Chat Ollama: ${ms} ms`, 'info'); } catch(_) { console.log('Chat Ollama ms=', ms); }
         const data = await response.json();
         
         if (response.ok && data.status === 'success') {
@@ -2774,7 +2751,7 @@ class LMStudioClone {
         contentSpan.className = 'entry-content';
         contentSpan.textContent = content;
         
-        // Устанавливаем правильные лейблы
+        // Set correct labels
         switch(role) {
             case 'user':
                 labelSpan.textContent = 'User:';
@@ -2793,7 +2770,7 @@ class LMStudioClone {
         entryDiv.appendChild(contentSpan);
         this.chatMessages.appendChild(entryDiv);
         
-        // Сохраняем сообщение в историю (кроме системных сообщений и информационных)
+        // Save message to history (except system and info)
         if (role === 'user' || role === 'assistant') {
             this.chatHistory.push({
                 role: role,
@@ -2801,16 +2778,15 @@ class LMStudioClone {
                 timestamp: new Date().toISOString()
             });
             
-            // Ограничиваем историю последними 20 сообщениями для экономии памяти
+            // Keep only last 20 messages in history
             if (this.chatHistory.length > 20) {
                 this.chatHistory = this.chatHistory.slice(-20);
             }
         }
         
-        // Автопрокрутка вниз при добавлении сообщения
         this.scrollToBottom();
         
-        return entryDiv; // Возвращаем элемент записи
+        return entryDiv;
     }
 
     scrollToBottom() {
@@ -2830,7 +2806,7 @@ class LMStudioClone {
             container.scrollTop = container.scrollHeight;
             if (index === 0) {
                 const containerLabel = container.id || container.className || 'chat-container';
-                console.log(`Скроллим окно чата (${containerLabel}):`, container.scrollHeight);
+                console.log(`Scrolling chat window (${containerLabel}):`, container.scrollHeight);
             }
         });
     }
@@ -2877,7 +2853,7 @@ class LMStudioClone {
     }
 
     switchTab(tabName) {
-        // Обновляем вкладки
+        // Update tabs
         this.tabs.forEach(tab => {
             tab.classList.remove('active');
             if (tab.dataset.tab === tabName) {
@@ -2885,7 +2861,7 @@ class LMStudioClone {
             }
         });
 
-        // Обновляем панели
+        // Update panels
         this.tabPanels.forEach(panel => {
             panel.classList.remove('active');
             if (panel.id === `${tabName}Tab`) {
@@ -2893,15 +2869,15 @@ class LMStudioClone {
             }
         });
         
-        // Обновляем данные при переключении на вкладку "Пациенты"
+        // Refresh data when switching to Patients tab
         if (tabName === 'patients') {
             this.updatePatientsStats();
             this.loadPatientsList();
         }
         
-        // Добавляем функции для тестирования в глобальную область видимости
+        // Expose test helpers on window
         window.testDocumentElements = () => {
-            console.log('=== Тест элементов управления документами ===');
+            console.log('=== Document controls test ===');
             console.log('selectedPatient:', document.getElementById('selectedPatient'));
             console.log('documentType:', document.getElementById('documentType'));
             console.log('documentContent:', document.getElementById('documentContent'));
@@ -2917,31 +2893,30 @@ class LMStudioClone {
         };
         
         window.testAddDocument = () => {
-            console.log('=== Тест функции addDocument ===');
+            console.log('=== Test addDocument ===');
             if (window.lmStudioClone) {
-                console.log('lmStudioClone найден, вызываем addDocument()');
+                console.log('lmStudioClone found, calling addDocument()');
                 window.lmStudioClone.addDocument();
             } else {
-                console.error('ERROR: lmStudioClone не найден');
+                console.error('ERROR: lmStudioClone not found');
             }
         };
         
         window.testDocumentContent = () => {
-            console.log('=== Тест содержимого документа ===');
+            console.log('=== Test document content ===');
             const element = document.getElementById('documentContent');
             if (element) {
-                console.log('Элемент найден:', element);
-                console.log('Значение:', JSON.stringify(element.value));
-                console.log('Длина:', element.value?.length);
+                console.log('Element found:', element);
+                console.log('Value:', JSON.stringify(element.value));
+                console.log('Length:', element.value?.length);
                 console.log('Trim:', JSON.stringify(element.value?.trim()));
-                console.log('Trim длина:', element.value?.trim()?.length);
+                console.log('Trim length:', element.value?.trim()?.length);
                 
-                // Попробуем установить тестовое значение
-                element.value = 'Тестовый документ';
-                console.log('Установлено тестовое значение');
-                console.log('Новое значение:', JSON.stringify(element.value));
+                element.value = 'Test document';
+                console.log('Test value set');
+                console.log('New value:', JSON.stringify(element.value));
             } else {
-                console.error('Элемент documentContent не найден!');
+                console.error('documentContent element not found!');
             }
         };
     }
@@ -2961,7 +2936,7 @@ class LMStudioClone {
         const logLine = document.createElement('div');
         logLine.className = `console-line console-message ${type}`;
         
-        // Создаем структурированное сообщение
+        // Build log line
         const timestampSpan = document.createElement('span');
         timestampSpan.className = 'log-timestamp';
         timestampSpan.textContent = `[${timestamp}]`;
@@ -2976,7 +2951,7 @@ class LMStudioClone {
         this.console.appendChild(logLine);
         this.console.scrollTop = this.console.scrollHeight;
         
-        // Ограничиваем количество строк в консоли
+        // Limit console line count
         const lines = this.console.querySelectorAll('.console-line');
         if (lines.length > 50) {
             lines[0].remove();
@@ -2984,7 +2959,7 @@ class LMStudioClone {
     }
 
     showNotification(message, type = 'info') {
-        // Создаем уведомление
+        // Create notification
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
@@ -2997,7 +2972,7 @@ class LMStudioClone {
             </div>
         `;
         
-        // Добавляем в контейнер уведомлений
+        // Append to notification container
         let container = document.getElementById('notificationContainer');
         if (!container) {
             container = document.createElement('div');
@@ -3008,20 +2983,19 @@ class LMStudioClone {
         
         container.appendChild(notification);
         
-        // Автоматически удаляем через 5 секунд
+        // Auto-remove after 5 seconds
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
             }
         }, 5000);
         
-        // Анимация появления
         setTimeout(() => {
             notification.classList.add('show');
         }, 100);
     }
 
-    // Просмотр промпта
+    // View prompt
     async showPromptPreview() {
         console.log('DEBUG: showPromptPreview called');
         
@@ -3035,72 +3009,71 @@ class LMStudioClone {
         try {
             this.logToConsole('🔍 Building prompt preview...', 'info');
             
-            // Собираем промпт точно так же, как при отправке (используем MemoRAG)
+            // Build prompt same as on send (with MemoRAG)
             const messages = [];
             
-            // 1. Системный промпт
+            // 1. System prompt
             if (this.useSystemPrompt && this.useSystemPrompt.checked && this.systemPrompt && this.systemPrompt.value.trim()) {
                 messages.push({
                     role: 'system',
                     content: this.systemPrompt.value.trim()
                 });
-                console.log('DEBUG: Добавлен системный промпт');
+                console.log('DEBUG: System prompt added');
             }
             
-            // 2. Данные пациента (если включены) - ИСПОЛЬЗУЕМ ТОТ ЖЕ ФОРМАТ, ЧТО И ПРИ ОТПРАВКЕ
+            // 2. Patient data (if enabled) - same format as on send
             if (this.usePatientData && this.usePatientData.checked && this.chatPatientSelect && this.chatPatientSelect.value) {
                 try {
                     const patientId = parseInt(this.chatPatientSelect.value);
-                    console.log(`DEBUG: Загружаем данные пациента ID=${patientId} для просмотра промпта`);
+                    console.log(`DEBUG: Loading patient data ID=${patientId} for prompt preview`);
                     const patientResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients/${patientId}/full`, {}, 10000);
                     
                     if (patientResponse.ok) {
                         const patientData = await patientResponse.json();
                         if (patientData && patientData.patient) {
-                            // Используем ТОЧНО такой же формат, как в sendMessageWithMemoRagContext
-                            let patientContext = '<<<Данные пациента - ОБЯЗАТЕЛЬНО ИСПОЛЬЗОВАТЬ ДЛЯ ОЦЕНКИ>>>\n\n';
+                            let patientContext = '<<<Patient data - USE FOR ASSESSMENT>>>\n\n';
                             const patient = patientData.patient;
-                            patientContext += `ОСНОВНАЯ ИНФОРМАЦИЯ О ПАЦИЕНТЕ:\n`;
-                            patientContext += `Имя: ${patient.name}\n`;
-                            if (patient.age) patientContext += `Возраст: ${patient.age} лет\n`;
-                            if (patient.gender) patientContext += `Пол: ${patient.gender}\n`;
-                            if (patient.notes) patientContext += `Заметки: ${patient.notes}\n`;
-                            patientContext += `Дата создания: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
+                            patientContext += `PATIENT INFO:\n`;
+                            patientContext += `Name: ${patient.name}\n`;
+                            if (patient.age) patientContext += `Age: ${patient.age} years\n`;
+                            if (patient.gender) patientContext += `Gender: ${patient.gender}\n`;
+                            if (patient.notes) patientContext += `Notes: ${patient.notes}\n`;
+                            patientContext += `Created: ${new Date(patient.created_at).toLocaleDateString()}\n\n`;
                             
                             if (patientData.documents && patientData.documents.length > 0) {
-                                patientContext += `ДОКУМЕНТЫ ПАЦИЕНТА (ИСПОЛЬЗУЙ ДЛЯ ОЦЕНКИ NPS, SNOT-22, EPOS 2020, T2-воспаления, ACT):\n\n`;
+                                patientContext += `PATIENT DOCUMENTS (use for NPS, SNOT-22, EPOS 2020, T2 inflammation, ACT):\n\n`;
                                 patientData.documents.forEach((doc, index) => {
                                     const content = (doc && typeof doc.content === 'string') ? this.stripEmptyLines(doc.content) : '';
-                                    patientContext += `ДОКУМЕНТ ${index + 1} [Тип: ${doc.document_type}]:\n`;
-                                    patientContext += (content ? content + '\n\n' : '[Содержимое документа отсутствует]\n\n');
+                                    patientContext += `DOCUMENT ${index + 1} [Type: ${doc.document_type}]:\n`;
+                                    patientContext += (content ? content + '\n\n' : '[Document content missing]\n\n');
                                 });
-                                patientContext += `ВАЖНО: Все данные из документов пациента выше ДОЛЖНЫ быть использованы для оценки NPS, SNOT-22, контроля ПРС (EPOS 2020), T2-воспаления, ACT и других показателей.\n`;
-                                patientContext += `Если в документах есть какие-либо оценки, анализы, симптомы, данные обследований - они должны быть использованы.\n\n`;
+                                patientContext += `IMPORTANT: All data from patient documents above MUST be used for NPS, SNOT-22, CRS control (EPOS 2020), T2 inflammation, ACT and other outcomes.\n`;
+                                patientContext += `If documents contain scores, labs, symptoms, exam data - use them.\n\n`;
                             } else {
-                                patientContext += `ВНИМАНИЕ: У пациента нет загруженных документов.\n\n`;
+                                patientContext += `ATTENTION: Patient has no uploaded documents.\n\n`;
                             }
                             
                             messages.push({
                                 role: 'user',
                                 content: patientContext
                             });
-                            console.log(`DEBUG: Данные пациента добавлены (${patientContext.length} символов)`);
+                            console.log(`DEBUG: Patient data added (${patientContext.length} chars)`);
                         }
                     } else {
-                        console.warn(`DEBUG: Ошибка получения данных пациента: ${patientResponse.status}`);
+                        console.warn(`DEBUG: Patient data fetch error: ${patientResponse.status}`);
                     }
                 } catch (error) {
-                    console.error('DEBUG: Ошибка загрузки данных пациента для просмотра:', error);
+                    console.error('DEBUG: Error loading patient data for preview:', error);
                     this.logToConsole(`⚠️ Failed to load patient data: ${error.message}`, 'warning');
                 }
             }
             
-            // 3. Данные MemoRAG (всегда включен теперь)
+            // 3. MemoRAG data (always on now)
             const chunksCount = this.memoragChunksCount ? parseInt(this.memoragChunksCount.value) : 5;
             const contextLength = parseInt(this.memoragContextLength?.value) || 200;
             
             try {
-                console.log(`DEBUG: Запрашиваем MemoRAG для просмотра (chunks: ${chunksCount})`);
+                console.log(`DEBUG: Requesting MemoRAG for preview (chunks: ${chunksCount})`);
                 const searchResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/memorag/search`, {
                     method: 'POST',
                     headers: {
@@ -3116,23 +3089,23 @@ class LMStudioClone {
                 if (searchResponse.ok) {
                     const searchData = await searchResponse.json();
                     if (searchData.status === 'success' && searchData.results && searchData.results.length > 0) {
-                        let memoragContext = '<<<Фрагменты базы знаний>>>\n\n';
+                        let memoragContext = '<<<Knowledge base fragments>>>\n\n';
                         
                         if (searchData.memory_context && searchData.memory_context.length > 0) {
-                            memoragContext += 'Контекст из памяти:\n';
+                            memoragContext += 'Memory context:\n';
                             searchData.memory_context.forEach((ctx, index) => {
                                 memoragContext += `${index + 1}. ${ctx}\n`;
                             });
                             memoragContext += '\n';
                         }
                         
-                        memoragContext += 'Релевантные документы:\n';
+                        memoragContext += 'Relevant documents:\n';
                         searchData.results.forEach((result, index) => {
                             memoragContext += `${index + 1}. ${result.document}\n\n`;
                         });
                         
                         if (searchData.clues_used && searchData.clues_used.length > 0) {
-                            memoragContext += 'Использованные подсказки для поиска:\n';
+                            memoragContext += 'Search clues used:\n';
                             searchData.clues_used.forEach((clue, index) => {
                                 memoragContext += `${index + 1}. ${clue}\n`;
                             });
@@ -3143,43 +3116,41 @@ class LMStudioClone {
                             role: 'user',
                             content: memoragContext
                         });
-                        console.log(`DEBUG: Данные MemoRAG добавлены (${memoragContext.length} символов)`);
+                        console.log(`DEBUG: MemoRAG data added (${memoragContext.length} chars)`);
                     }
                 } else {
-                    console.warn(`DEBUG: Ошибка получения MemoRAG: ${searchResponse.status}`);
+                    console.warn(`DEBUG: MemoRAG fetch error: ${searchResponse.status}`);
                 }
             } catch (error) {
-                console.error('DEBUG: Ошибка загрузки MemoRAG для просмотра:', error);
+                console.error('DEBUG: Error loading MemoRAG for preview:', error);
                 this.logToConsole(`⚠️ Failed to load MemoRAG: ${error.message}`, 'warning');
             }
             
-            // 4. История беседы
+            // 4. Chat history
             if (this.chatHistory && this.chatHistory.length > 0) {
-                let historyContext = '<<<История беседы>>>\n\n';
+                let historyContext = '<<<Chat history>>>\n\n';
                 const recentHistory = this.chatHistory.slice(-10);
                 recentHistory.forEach((msg, index) => {
-                    historyContext += `${msg.role === 'user' ? 'Пользователь' : 'Ассистент'}: ${msg.content}\n\n`;
+                    historyContext += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n\n`;
                 });
                 messages.push({
                     role: 'user',
                     content: historyContext
                 });
-                console.log(`DEBUG: История беседы добавлена (${this.chatHistory.length} сообщений)`);
+                console.log(`DEBUG: Chat history added (${this.chatHistory.length} messages)`);
             }
             
-            // 5. Текущее сообщение пользователя
+            // 5. Current user message
             messages.push({
                 role: 'user',
                 content: message
             });
             
-            console.log(`DEBUG: Всего сообщений в промпте: ${messages.length}`);
+            console.log(`DEBUG: Total messages in prompt: ${messages.length}`);
             
-            // Форматируем промпт как он будет отправлен
             const formattedPrompt = this.formatMessagesForOllama(messages);
-            console.log(`DEBUG: Промпт отформатирован, длина: ${formattedPrompt.length} символов`);
+            console.log(`DEBUG: Prompt formatted, length: ${formattedPrompt.length} chars`);
             
-            // Создаем модальное окно
             this.showPromptModal(formattedPrompt, messages);
             this.logToConsole('✅ Prompt built and displayed', 'success');
             
@@ -3192,44 +3163,40 @@ class LMStudioClone {
     showPromptModal(formattedPrompt, messages) {
         console.log('DEBUG: showPromptModal called');
         
-        // Удаляем старое модальное окно, если есть
         const oldModal = document.getElementById('promptPreviewModal');
         if (oldModal) {
             console.log('DEBUG: Removing old modal');
             oldModal.remove();
         }
         
-        // Экранируем текст для безопасного вставки в HTML
+        // Escape text for safe HTML
         const escapeHtml = (text) => {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         };
         
-        // Формируем список секций
+        // Build sections list
         const sectionsList = messages.map((msg, idx) => {
             let sectionType = msg.role;
-            if (msg.content.includes('Данные пациента') || msg.content.includes('<<<Данные пациента')) {
+            if (msg.content.includes('Patient data') || msg.content.includes('<<<Patient data')) {
                 sectionType = 'patient-data';
-            } else if (msg.content.includes('<<<Фрагменты базы знаний>>>')) {
+            } else if (msg.content.includes('<<<Knowledge base fragments>>>')) {
                 sectionType = 'knowledge-base';
-            } else if (msg.content.includes('<<<История беседы>>>')) {
+            } else if (msg.content.includes('<<<Chat history>>>')) {
                 sectionType = 'chat-history';
             }
             const preview = escapeHtml(msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''));
             return `<li><strong>[${idx + 1}]</strong> ${escapeHtml(sectionType)}: ${preview}</li>`;
         }).join('');
         
-        // Создаем модальное окно
         const modal = document.createElement('div');
         modal.id = 'promptPreviewModal';
         modal.className = 'prompt-modal';
         
-        // Создаем структуру модального окна
         const modalContent = document.createElement('div');
         modalContent.className = 'prompt-modal-content';
         
-        // Заголовок
         const header = document.createElement('div');
         header.className = 'prompt-modal-header';
         header.innerHTML = `
@@ -3239,11 +3206,9 @@ class LMStudioClone {
             </button>
         `;
         
-        // Тело модального окна
         const body = document.createElement('div');
         body.className = 'prompt-modal-body';
         
-        // Информация
         const info = document.createElement('div');
         info.className = 'prompt-info';
         info.innerHTML = `
@@ -3261,32 +3226,28 @@ class LMStudioClone {
             </div>
         `;
         
-        // Секции
         const sections = document.createElement('div');
         sections.className = 'prompt-sections';
         sections.innerHTML = `
-            <h3>Структура промпта:</h3>
+            <h3>Prompt structure:</h3>
             <ul class="prompt-sections-list">
                 ${sectionsList}
             </ul>
         `;
         
-        // Текст промпта
         const textContainer = document.createElement('div');
         textContainer.className = 'prompt-text-container';
         textContainer.innerHTML = `
-            <h3>Полный промпт:</h3>
+            <h3>Full prompt:</h3>
             <textarea readonly class="prompt-text" rows="20"></textarea>
             <button class="btn btn-secondary copy-prompt-btn">
                 <i class="fas fa-copy"></i> Copy
             </button>
         `;
         
-        // Вставляем текст в textarea
         const textarea = textContainer.querySelector('.prompt-text');
         textarea.value = formattedPrompt;
         
-        // Кнопка копирования
         const copyBtn = textContainer.querySelector('.copy-prompt-btn');
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(formattedPrompt).then(() => {
@@ -3295,15 +3256,14 @@ class LMStudioClone {
                     copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
                 }, 2000);
             }).catch(err => {
-                console.error('Ошибка копирования:', err);
-                copyBtn.innerHTML = '<i class="fas fa-exclamation"></i> Ошибка';
+                console.error('Copy error:', err);
+                copyBtn.innerHTML = '<i class="fas fa-exclamation"></i> Error';
                 setTimeout(() => {
                     copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
                 }, 2000);
             });
         });
         
-        // Собираем структуру
         body.appendChild(info);
         body.appendChild(sections);
         body.appendChild(textContainer);
@@ -3312,23 +3272,20 @@ class LMStudioClone {
         modalContent.appendChild(body);
         modal.appendChild(modalContent);
         
-        // Кнопка закрытия
         const closeBtn = header.querySelector('.prompt-modal-close');
         closeBtn.addEventListener('click', () => {
             modal.remove();
         });
         
         document.body.appendChild(modal);
-        console.log('DEBUG: Модальное окно добавлено в DOM');
+        console.log('DEBUG: Modal added to DOM');
         
-        // Закрытие по клику вне модального окна
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.remove();
             }
         });
         
-        // Закрытие по Escape
         const escapeHandler = (e) => {
             if (e.key === 'Escape') {
                 modal.remove();
@@ -3337,86 +3294,83 @@ class LMStudioClone {
         };
         document.addEventListener('keydown', escapeHandler);
         
-        console.log('DEBUG: Модальное окно полностью создано и настроено');
+        console.log('DEBUG: Modal created and configured');
     }
 
-    // Управление темой
+    // Theme handling
     loadTheme() {
         const savedTheme = localStorage.getItem('lm-studio-theme');
-        console.log('DEBUG: loadTheme() вызвана, сохраненная тема:', savedTheme);
+        console.log('DEBUG: loadTheme() called, saved theme:', savedTheme);
         
         if (savedTheme === 'dark') {
-            // Темная тема сохранена
             this.isDarkTheme = true;
             document.body.classList.remove('light-theme');
-            console.log('DEBUG: Применена темная тема');
+            console.log('DEBUG: Dark theme applied');
         } else {
-            // Светлая тема по умолчанию или если сохранена
             this.isDarkTheme = false;
             document.body.classList.add('light-theme');
-            console.log('DEBUG: Применена светлая тема');
+            console.log('DEBUG: Light theme applied');
         }
         
-        console.log('DEBUG: Классы body после загрузки темы:', document.body.className);
+        console.log('DEBUG: body classes after theme load:', document.body.className);
         this.updateThemeIcon();
     }
 
     toggleTheme() {
-        console.log('DEBUG: toggleTheme() вызвана, текущая тема:', this.isDarkTheme);
+        console.log('DEBUG: toggleTheme() called, current theme:', this.isDarkTheme);
         this.isDarkTheme = !this.isDarkTheme;
         
         if (this.isDarkTheme) {
             document.body.classList.remove('light-theme');
             localStorage.setItem('lm-studio-theme', 'dark');
-            console.log('DEBUG: Переключено на темную тему');
+            console.log('DEBUG: Switched to dark theme');
         } else {
             document.body.classList.add('light-theme');
             localStorage.setItem('lm-studio-theme', 'light');
-            console.log('DEBUG: Переключено на светлую тему');
+            console.log('DEBUG: Switched to light theme');
         }
         
-        console.log('DEBUG: Классы body после переключения:', document.body.className);
+        console.log('DEBUG: body classes after toggle:', document.body.className);
         this.updateThemeIcon();
-        this.logToConsole(`Тема изменена на ${this.isDarkTheme ? 'темную' : 'светлую'}`, 'success');
+        this.logToConsole(`Theme set to ${this.isDarkTheme ? 'dark' : 'light'}`, 'success');
     }
 
     updateThemeIcon() {
         if (!this.themeToggle) {
-            console.warn('DEBUG: themeToggle не найден, невозможно обновить иконку');
+            console.warn('DEBUG: themeToggle not found, cannot update icon');
             return;
         }
         
         const icon = this.themeToggle.querySelector('i');
         if (!icon) {
-            console.warn('DEBUG: Иконка в themeToggle не найдена');
+            console.warn('DEBUG: Icon in themeToggle not found');
             return;
         }
         
         if (this.isDarkTheme) {
             icon.className = 'fas fa-moon';
-            this.themeToggle.title = 'Переключить на светлую тему';
-            console.log('DEBUG: Иконка обновлена: луна (темная тема)');
+            this.themeToggle.title = 'Switch to light theme';
+            console.log('DEBUG: Icon updated: moon (dark theme)');
         } else {
             icon.className = 'fas fa-sun';
-            this.themeToggle.title = 'Переключить на темную тему';
-            console.log('DEBUG: Иконка обновлена: солнце (светлая тема)');
+            this.themeToggle.title = 'Switch to dark theme';
+            console.log('DEBUG: Icon updated: sun (light theme)');
         }
     }
 
-    // Работа с Ollama
+    // Ollama handling
     async checkOllamaStatus() {
-        // Предотвращаем множественные одновременные проверки
         if (this.checkingOllamaStatus) {
-            console.log('DEBUG: Проверка Ollama уже выполняется, пропускаем');
+            console.log('DEBUG: Ollama check already in progress, skipping');
             return;
         }
         
         this.checkingOllamaStatus = true;
         
         try {
-            console.log('DEBUG: Проверка статуса Ollama сервера для генерации текста...');
+            console.log('DEBUG: Checking Ollama server status...');
             
-            // Сначала проверяем через /health - он быстрее и уже имеет информацию
+            // Check /health first (faster)
             try {
                 const healthResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/health`, {}, 5000);
                 if (healthResponse.ok) {
@@ -3424,11 +3378,11 @@ class LMStudioClone {
                     if (healthData.ollama_connected !== undefined) {
                         const modelsCount = healthData.connection_info?.available_models_count || 0;
                         if (healthData.ollama_connected && modelsCount > 0) {
-                            console.log('DEBUG: Ollama подключен через /health, модели:', modelsCount);
+                            console.log('DEBUG: Ollama connected via /health, models:', modelsCount);
                             this.isOllamaConnected = true;
                             this.updateOllamaStatus(true, modelsCount);
                             
-                            // Загружаем модели если еще не загружены
+                            // Load models if not loaded yet
                             if (!this.ollamaModelsLoaded) {
                                 await this.loadOllamaModels();
                             }
@@ -3439,38 +3393,37 @@ class LMStudioClone {
                     }
                 }
             } catch (healthError) {
-                console.log('DEBUG: /health недоступен, используем прямой запрос');
+                console.log('DEBUG: /health unavailable, using direct request');
             }
             
-            // Получаем URL Ollama из поля ввода или используем значение по умолчанию
+            // Get Ollama URL from input or default
             const ollamaUrlInput = document.getElementById('ollamaUrl');
             const ollamaUrl = ollamaUrlInput ? (ollamaUrlInput.value || ollamaUrlInput.defaultValue || 'http://127.0.0.1:11434') : 'http://127.0.0.1:11434';
             
-            console.log('DEBUG: Проверяем Ollama по адресу:', ollamaUrl);
-            console.log('DEBUG: Бэкенд API URL:', this.apiBaseUrl);
-            console.log('DEBUG: Полный URL запроса:', `${this.apiBaseUrl}/ollama/models?url=${encodeURIComponent(ollamaUrl)}`);
+            console.log('DEBUG: Checking Ollama at:', ollamaUrl);
+            console.log('DEBUG: Backend API URL:', this.apiBaseUrl);
+            console.log('DEBUG: Full request URL:', `${this.apiBaseUrl}/ollama/models?url=${encodeURIComponent(ollamaUrl)}`);
             
-            // Сначала проверяем, что бэкенд доступен
             try {
                 const healthCheck = await this.fetchWithTimeout(`${this.apiBaseUrl}/health`, {}, 3000);
                 if (!healthCheck.ok) {
-                    throw new Error(`Бэкенд недоступен (статус ${healthCheck.status})`);
+                    throw new Error(`Backend unavailable (status ${healthCheck.status})`);
                 }
-                console.log('DEBUG: Бэкенд доступен, продолжаем проверку Ollama');
+                console.log('DEBUG: Backend available, continuing Ollama check');
             } catch (healthError) {
-                console.error('DEBUG: Бэкенд недоступен:', healthError);
-                throw new Error(`Бэкенд недоступен на ${this.apiBaseUrl}. Убедитесь, что сервер запущен.`);
+                console.error('DEBUG: Backend unavailable:', healthError);
+                throw new Error(`Backend unavailable at ${this.apiBaseUrl}. Make sure the server is running.`);
             }
             
-            // Проверяем доступность Ollama через эндпоинт /ollama/models
-            // Используем увеличенный таймаут, так как список моделей может быть большим
+            // Check Ollama via /ollama/models
+            // Use longer timeout for large model lists
             const response = await this.fetchWithTimeout(
                 `${this.apiBaseUrl}/ollama/models?url=${encodeURIComponent(ollamaUrl)}`, 
                 {}, 
-                10000  // Увеличенный таймаут 10 секунд для больших списков моделей
+                10000  // 10 s timeout for large model lists
             );
             
-            console.log('DEBUG: Ответ от API получен, статус:', response.status, response.ok);
+            console.log('DEBUG: API response received, status:', response.status, response.ok);
             
             if (response.ok) {
                 const data = await response.json();
@@ -3481,42 +3434,42 @@ class LMStudioClone {
                     this.isOllamaConnected = true;
                     this.updateOllamaStatus(true, modelsCount);
                     
-                    // Загружаем модели если еще не загружены
+                    // Load models if not loaded yet
                     if (!this.ollamaModelsLoaded) {
-                        // Загружаем модели синхронно, чтобы они точно добавились в список
+                        // Load models synchronously so they are added to the list
                         await this.loadOllamaModels();
                     }
                     
-                        this.logToConsole(`✅ Ollama доступен (${modelsCount} моделей)`, 'success');
+                        this.logToConsole(`✅ Ollama available (${modelsCount} models)`, 'success');
                 } else {
                     this.isOllamaConnected = false;
                     this.updateOllamaStatus(false);
-                    console.warn('DEBUG: Ollama вернул некорректный ответ:', data);
+                    console.warn('DEBUG: Ollama returned invalid response:', data);
                 }
             } else {
-                // Логируем ошибку для диагностики
-                const errorText = await response.text().catch(() => 'Не удалось прочитать ответ');
-                console.error(`DEBUG: Ollama API вернул ошибку: статус ${response.status}, ответ: ${errorText}`);
+                // Log error for diagnostics
+                const errorText = await response.text().catch(() => 'Failed to read response');
+                console.error(`DEBUG: Ollama API error: status ${response.status}, response: ${errorText}`);
                 this.isOllamaConnected = false;
                 this.updateOllamaStatus(false);
-                this.logToConsole(`❌ Не удалось подключиться к Ollama (статус ${response.status})`, 'error');
+                this.logToConsole(`❌ Failed to connect to Ollama (status ${response.status})`, 'error');
             }
         } catch (error) {
-            // Логируем ошибки для диагностики
+            // Log errors for diagnostics
             if (error.name !== 'AbortError') {
                 console.error('DEBUG: Исключение при проверке Ollama:', error.name, error.message);
-                console.error('DEBUG: Стек ошибки:', error.stack);
+                console.error('DEBUG: Error stack:', error.stack);
                 
-                // Показываем понятное сообщение пользователю
-                let errorMessage = 'Неизвестная ошибка';
+                // Show user-friendly message
+                let errorMessage = 'Unknown error';
                 if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    errorMessage = 'Не удалось подключиться к серверу. Проверьте, что бэкенд запущен.';
+                    errorMessage = 'Failed to connect to server. Check that the backend is running.';
                 } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-                    errorMessage = 'Таймаут подключения к Ollama. Проверьте, что Ollama запущен и доступен.';
+                    errorMessage = 'Ollama connection timeout. Check that Ollama is running and reachable.';
                 } else if (error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Не удалось выполнить запрос. Проверьте подключение к бэкенду.';
+                    errorMessage = 'Request failed. Check connection to backend.';
                 } else {
-                    errorMessage = `Ошибка: ${error.message}`;
+                    errorMessage = `Error: ${error.message}`;
                 }
                 
                 this.logToConsole(`❌ ${errorMessage}`, 'error');
@@ -3530,43 +3483,43 @@ class LMStudioClone {
 
     updateOllamaStatus(connected, modelCount = 0) {
         if (connected) {
-            this.ollamaStatus.innerHTML = `<p>✓ Подключен (${modelCount} моделей)</p>`;
+            this.ollamaStatus.innerHTML = `<p>✓ Connected (${modelCount} models)</p>`;
             this.ollamaStatus.classList.add('connected');
         } else {
-            this.ollamaStatus.innerHTML = '<p>Не подключен</p>';
+            this.ollamaStatus.innerHTML = '<p>Not connected</p>';
             this.ollamaStatus.classList.remove('connected');
         }
     }
 
     async loadOllamaModels() {
         if (!this.isOllamaConnected) {
-            console.log('DEBUG: loadOllamaModels: Ollama не подключен, пропускаем');
+            console.log('DEBUG: loadOllamaModels: Ollama not connected, skipping');
             return;
         }
 
-        // Переинициализируем modelSelect на случай, если DOM еще не готов
+        // Re-resolve modelSelect in case DOM is not ready
         if (!this.modelSelect) {
             this.modelSelect = document.getElementById('modelSelect');
         }
         
         if (!this.modelSelect) {
-            console.error('DEBUG: loadOllamaModels: modelSelect не найден! Попытка найти элемент...');
+            console.error('DEBUG: loadOllamaModels: modelSelect not found! Retrying...');
             // Попробуем найти элемент еще раз через небольшую задержку
             await new Promise(resolve => setTimeout(resolve, 100));
             this.modelSelect = document.getElementById('modelSelect');
             if (!this.modelSelect) {
-                console.error('DEBUG: loadOllamaModels: modelSelect все еще не найден после задержки!');
+                console.error('DEBUG: loadOllamaModels: modelSelect still not found after delay!');
                 return;
             }
         }
 
         try {
-            console.log('DEBUG: loadOllamaModels: Начинаем загрузку моделей Ollama...');
+            console.log('DEBUG: loadOllamaModels: Loading Ollama models...');
             
-            // Используем URL из поля ввода или значение по умолчанию
+            // Use URL from input or default
             const ollamaUrlInput = document.getElementById('ollamaUrl');
             const ollamaUrl = ollamaUrlInput ? (ollamaUrlInput.value || ollamaUrlInput.defaultValue || 'http://127.0.0.1:11434') : 'http://127.0.0.1:11434';
-            // Увеличенный таймаут для загрузки списка моделей (может быть много моделей)
+            // Longer timeout for model list (can be large)
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/ollama/models?url=${encodeURIComponent(ollamaUrl)}`, {}, 15000);
             const data = await response.json();
             
@@ -3574,10 +3527,10 @@ class LMStudioClone {
             console.log('DEBUG: loadOllamaModels: Тип data.models:', typeof data.models, 'isArray:', Array.isArray(data.models));
             
             if (data.status === 'success') {
-                // Добавляем модели Ollama в список для чата
+                // Add Ollama models to chat list
                 let ollamaModels = [];
                 
-                // Проверяем разные форматы ответа
+                // Handle different response formats
                 if (Array.isArray(data.models)) {
                     ollamaModels = data.models;
                     console.log('DEBUG: loadOllamaModels: data.models - это массив');
@@ -3587,16 +3540,16 @@ class LMStudioClone {
                     console.log('DEBUG: loadOllamaModels: data.models - это объект, преобразован в массив');
                 } else if (data.data && Array.isArray(data.data)) {
                     ollamaModels = data.data;
-                    console.log('DEBUG: loadOllamaModels: Используем data.data (массив)');
+                    console.log('DEBUG: loadOllamaModels: Using data.data (array)');
                 } else {
-                    console.warn('DEBUG: loadOllamaModels: Неизвестный формат данных:', data);
+                    console.warn('DEBUG: loadOllamaModels: Unknown data format:', data);
                 }
                 
-                console.log(`DEBUG: loadOllamaModels: Найдено ${ollamaModels.length} моделей Ollama`);
+                console.log(`DEBUG: loadOllamaModels: Found ${ollamaModels.length} Ollama models`);
                 if (ollamaModels.length > 0) {
-                    console.log('DEBUG: loadOllamaModels: Первые 3 модели:', ollamaModels.slice(0, 3));
+                    console.log('DEBUG: loadOllamaModels: First 3 models:', ollamaModels.slice(0, 3));
                 } else {
-                    console.warn('DEBUG: loadOllamaModels: Массив моделей пуст!');
+                    console.warn('DEBUG: loadOllamaModels: Model array is empty!');
                 }
                 console.log(`DEBUG: loadOllamaModels: modelSelect существует: ${!!this.modelSelect}`);
                 if (this.modelSelect) {
@@ -3609,11 +3562,11 @@ class LMStudioClone {
                     
                 ollamaModels.forEach(model => {
                         if (!this.modelSelect) {
-                            console.warn('DEBUG: loadOllamaModels: modelSelect не найден в forEach!');
+                            console.warn('DEBUG: loadOllamaModels: modelSelect not found in forEach!');
                             return;
                         }
                         
-                        // API возвращает массив строк (имен моделей) или объектов
+                        // API returns array of strings (model names) or objects
                         let modelName = '';
                         if (typeof model === 'string') {
                             modelName = model;
@@ -3624,11 +3577,11 @@ class LMStudioClone {
                         }
                         
                         if (!modelName) {
-                            console.warn(`DEBUG: loadOllamaModels: Пустое имя модели для:`, model);
+                            console.warn(`DEBUG: loadOllamaModels: Empty model name for:`, model);
                             return;
                         }
                         
-                        // Проверяем, что такой модели еще нет в списке
+                        // Ensure this model is not already in list
                         const existingOption = Array.from(this.modelSelect.options).find(
                             opt => opt.value === `ollama:${modelName}` || opt.value === modelName
                         );
@@ -3638,25 +3591,25 @@ class LMStudioClone {
                             option.textContent = `🦙 ${modelName} (Ollama)`;
                     this.modelSelect.appendChild(option);
                             addedCount++;
-                            console.log(`DEBUG: loadOllamaModels: Добавлена модель: ${modelName}`);
+                            console.log(`DEBUG: loadOllamaModels: Added model: ${modelName}`);
                         } else {
                             skippedCount++;
-                            console.log(`DEBUG: loadOllamaModels: Модель ${modelName} уже существует, пропущена`);
+                            console.log(`DEBUG: loadOllamaModels: Model ${modelName} already exists, skipped`);
                         }
                 });
                 
                 console.log(`DEBUG: loadOllamaModels: Добавлено новых: ${addedCount}, пропущено (уже есть): ${skippedCount}`);
                 
-                // Добавляем модели в список для действий
+                // Add models to action list
                 // Переинициализируем selectedModelForAction на случай, если DOM еще не готов
                 if (!this.selectedModelForAction) {
                     this.selectedModelForAction = document.getElementById('selectedModelForAction');
                 }
                 
                 if (this.selectedModelForAction) {
-                this.selectedModelForAction.innerHTML = '<option value="">Выберите модель...</option>';
+                this.selectedModelForAction.innerHTML = '<option value="">Select model...</option>';
                 ollamaModels.forEach(model => {
-                            // API возвращает массив строк (имен моделей) или объектов
+                            // API returns array of strings (model names) or objects
                             let modelName = '';
                             if (typeof model === 'string') {
                                 modelName = model;
@@ -3675,22 +3628,22 @@ class LMStudioClone {
                 });
                     }
                 
-                    this.logToConsole(`Загружено ${ollamaModels.length} моделей Ollama`, 'success');
+                    this.logToConsole(`Loaded ${ollamaModels.length} Ollama models`, 'success');
                 this.ollamaModelsLoaded = true;
                     
-                    // Проверяем, что модели действительно добавлены
+                    // Verify models were added
                     const totalOllamaModelsCount = Array.from(this.modelSelect.options).filter(opt => opt.value.startsWith('ollama:')).length;
-                    console.log(`DEBUG: loadOllamaModels: Всего моделей Ollama в списке: ${totalOllamaModelsCount} (ожидалось ${ollamaModels.length})`);
+                    console.log(`DEBUG: loadOllamaModels: Total Ollama models in list: ${totalOllamaModelsCount} (expected ${ollamaModels.length})`);
                 } else {
-                    this.logToConsole('⚠️ Ollama подключен, но модели не найдены', 'warning');
-                    console.warn('DEBUG: loadOllamaModels: Модели не найдены в ответе API');
+                    this.logToConsole('⚠️ Ollama connected but no models found', 'warning');
+                    console.warn('DEBUG: loadOllamaModels: No models in API response');
                 }
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
-            console.error('DEBUG: loadOllamaModels: Ошибка:', error);
-            this.logToConsole(`Ошибка загрузки моделей Ollama: ${error.message}`, 'error');
+            console.error('DEBUG: loadOllamaModels: Error:', error);
+            this.logToConsole(`Ollama model load error: ${error.message}`, 'error');
         }
     }
 
@@ -3701,11 +3654,10 @@ class LMStudioClone {
         const ollamaUrl = ollamaUrlInput ? (ollamaUrlInput.value || ollamaUrlInput.defaultValue || 'http://127.0.0.1:11434') : 'http://127.0.0.1:11434';
         
         this.applyConfigBtn.disabled = true;
-        this.applyConfigBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Применение...';
+        this.applyConfigBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Applying...';
 
         try {
-            // Сначала проверяем подключение к Ollama с новым URL
-            console.log('DEBUG: applyOllamaConfig: Проверяем подключение к Ollama:', ollamaUrl);
+            console.log('DEBUG: applyOllamaConfig: Checking Ollama connection:', ollamaUrl);
             const connectResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/ollama/connect`, {
                 method: 'POST',
                 headers: {
@@ -3717,10 +3669,10 @@ class LMStudioClone {
             const connectData = await connectResponse.json();
             
             if (!connectResponse.ok || connectData.status !== 'connected') {
-                throw new Error(connectData.detail || `Не удалось подключиться к Ollama на ${ollamaUrl}`);
+                throw new Error(connectData.detail || `Failed to connect to Ollama at ${ollamaUrl}`);
             }
             
-            this.logToConsole(`✅ Подключение к Ollama успешно (${connectData.models_count} моделей)`, 'success');
+            this.logToConsole(`✅ Connected to Ollama (${connectData.models_count} models)`, 'success');
             
             // Применяем режим
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/ollama/config`, {
@@ -3734,25 +3686,24 @@ class LMStudioClone {
             const data = await response.json();
             
             if (response.ok && data.status === 'success') {
-                this.logToConsole(`Режим ${mode} применен успешно`, 'success');
-                this.logToConsole(`Настройки: ${JSON.stringify(data.config)}`, 'info');
+                this.logToConsole(`Mode ${mode} applied successfully`, 'success');
+                this.logToConsole(`Settings: ${JSON.stringify(data.config)}`, 'info');
                 
-                // Перепроверяем статус Ollama и загружаем модели
                 this.isOllamaConnected = true;
-                this.ollamaModelsLoaded = false; // Сбрасываем флаг, чтобы загрузить модели заново
+                this.ollamaModelsLoaded = false; // Reset so models reload
                 await this.checkOllamaStatus();
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             const errorMessage = error.message || error.toString();
-            this.logToConsole(`❌ Ошибка применения настроек: ${errorMessage}`, 'error');
+            this.logToConsole(`❌ Failed to apply settings: ${errorMessage}`, 'error');
             console.error('DEBUG: applyOllamaConfig error:', error);
             this.isOllamaConnected = false;
             this.updateOllamaStatus(false);
         } finally {
             this.applyConfigBtn.disabled = false;
-            this.applyConfigBtn.innerHTML = '<i class="fas fa-cog"></i> Применить настройки';
+            this.applyConfigBtn.innerHTML = '<i class="fas fa-cog"></i> Apply settings';
         }
     }
 
@@ -3760,12 +3711,12 @@ class LMStudioClone {
     async getOllamaModelInfo() {
         const modelName = this.selectedModelForAction.value;
         if (!modelName) {
-            this.logToConsole('Выберите модель для получения информации', 'error');
+            this.logToConsole('Select a model to get info', 'error');
             return;
         }
 
         this.modelInfoBtn.disabled = true;
-        this.modelInfoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+        this.modelInfoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
         try {
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/ollama/model`, {
@@ -3783,17 +3734,17 @@ class LMStudioClone {
             
             if (response.ok && data.status === 'success') {
                 const info = data.model_info;
-                this.logToConsole(`Информация о модели ${modelName}:`, 'success');
+                this.logToConsole(`Model info for ${modelName}:`, 'success');
                 this.logToConsole(`Размер: ${(info.size / 1024 / 1024 / 1024).toFixed(2)} GB`, 'info');
                 this.logToConsole(`Семейство: ${info.family}`, 'info');
                 this.logToConsole(`Параметры: ${info.parameters}`, 'info');
                 this.logToConsole(`Квантизация: ${info.quantization}`, 'info');
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             const errorMessage = error.message || error.toString();
-            this.logToConsole(`Ошибка получения информации: ${errorMessage}`, 'error');
+            this.logToConsole(`Error getting info: ${errorMessage}`, 'error');
         } finally {
             this.modelInfoBtn.disabled = false;
             this.modelInfoBtn.innerHTML = '<i class="fas fa-info"></i> Информация';
@@ -3803,11 +3754,11 @@ class LMStudioClone {
     async removeOllamaModel() {
         const modelName = this.selectedModelForAction.value;
         if (!modelName) {
-            this.logToConsole('Выберите модель для удаления', 'error');
+            this.logToConsole('Select a model to remove', 'error');
             return;
         }
 
-        if (!confirm(`Вы уверены, что хотите удалить модель "${modelName}"?`)) {
+        if (!confirm(`Are you sure you want to remove model "${modelName}"?`)) {
             return;
         }
 
@@ -3829,38 +3780,37 @@ class LMStudioClone {
             const data = await response.json();
             
             if (response.ok && data.status === 'success') {
-                this.logToConsole(`Модель ${modelName} удалена`, 'success');
-                // Обновляем список моделей
+                this.logToConsole(`Model ${modelName} removed`, 'success');
                 await this.loadOllamaModels();
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             const errorMessage = error.message || error.toString();
-            this.logToConsole(`Ошибка удаления модели: ${errorMessage}`, 'error');
+            this.logToConsole(`Error removing model: ${errorMessage}`, 'error');
         } finally {
             this.removeModelBtn.disabled = false;
             this.removeModelBtn.innerHTML = '<i class="fas fa-trash"></i> Удалить';
         }
     }
 
-    // Методы для работы с системным промптом
+    // System prompt helpers
     buildMessages(userMessage) {
         const messages = [];
         
-        // Добавляем системный промпт если включен
+        // Add system prompt if enabled
         if (this.useSystemPrompt.checked && this.systemPrompt.value.trim()) {
             const systemContent = this.systemPrompt.value.trim();
             messages.push({
                 role: 'system',
                 content: systemContent
             });
-            this.logToConsole(`📋 Системный промпт применен в buildMessages (${systemContent.length} символов)`, 'info');
+            this.logToConsole(`📋 System prompt applied in buildMessages (${systemContent.length} chars)`, 'info');
         } else {
-            this.logToConsole('⚠️ Системный промпт не применен в buildMessages', 'warning');
+            this.logToConsole('⚠️ System prompt not applied in buildMessages', 'warning');
         }
         
-        // Добавляем сообщение пользователя
+        // Add user message
         messages.push({
             role: 'user',
             content: userMessage
@@ -3873,9 +3823,9 @@ class LMStudioClone {
         const savedPrompt = localStorage.getItem('lm-studio-system-prompt');
         const savedUsePrompt = localStorage.getItem('lm-studio-use-system-prompt');
         
-        // Проверяем, содержит ли сохраненный промпт проблемный контент
+        // Check if saved prompt has problematic content
         if (savedPrompt && this.isProblematicPrompt(savedPrompt)) {
-            this.logToConsole('⚠️ Обнаружен проблемный системный промпт, сбрасываем к значениям по умолчанию', 'warning');
+            this.logToConsole('⚠️ Problematic system prompt detected, resetting to default', 'warning');
             this.resetToDefaultPrompt();
             return;
         }
@@ -3889,20 +3839,20 @@ class LMStudioClone {
         }
         
         // Показываем состояние чекбокса
-        this.logToConsole(`📋 Использование системного промпта: ${this.useSystemPrompt.checked ? 'включено' : 'выключено'}`, 'info');
+        this.logToConsole(`📋 System prompt usage: ${this.useSystemPrompt.checked ? 'on' : 'off'}`, 'info');
         
-        this.logToConsole('Системный промпт загружен', 'success');
+        this.logToConsole('System prompt loaded', 'success');
         
-        // Показываем текущий системный промпт в консоли
+        // Show current system prompt in console
         if (this.systemPrompt.value.trim()) {
             const preview = this.systemPrompt.value.trim().substring(0, 100);
             const fullText = this.systemPrompt.value.trim().length > 100 ? preview + '...' : preview;
-            this.logToConsole(`📋 Текущий системный промпт: "${fullText}"`, 'info');
+            this.logToConsole(`📋 Current system prompt: "${fullText}"`, 'info');
         }
     }
     
     isProblematicPrompt(prompt) {
-        // Проверяем на наличие китайских символов или других проблемных паттернов
+        // Check for Chinese characters or other problematic patterns
         const chinesePattern = /[\u4e00-\u9fff]/;
         const problematicPatterns = [
             /需求分析/,
@@ -3961,7 +3911,7 @@ class LMStudioClone {
         localStorage.setItem('lm-studio-system-prompt', prompt);
         localStorage.setItem('lm-studio-use-system-prompt', this.useSystemPrompt.checked);
         
-        this.logToConsole('Системный промпт сохранен', 'success');
+        this.logToConsole('System prompt saved', 'success');
         
         // Визуальная обратная связь
         this.saveSystemPromptBtn.innerHTML = '<i class="fas fa-check"></i> Сохранено';
@@ -3971,7 +3921,7 @@ class LMStudioClone {
     }
 
     clearSystemPrompt() {
-        if (confirm('Сбросить системный промпт к значениям по умолчанию?')) {
+        if (confirm('Reset system prompt to default?')) {
             this.systemPrompt.value = `Ты профессиональный медицинский AI-ассистент со специализацией в оториноларингологии (ЛОР) на русском языке.
 
 ТВОЯ РОЛЬ:
@@ -4008,7 +3958,7 @@ class LMStudioClone {
 4. Рекомендации по дальнейшим действиям`;
             this.useSystemPrompt.checked = true;
             this.saveSystemPrompt();
-            this.logToConsole('Системный промпт сброшен к значениям по умолчанию', 'success');
+            this.logToConsole('System prompt reset to default', 'success');
         }
     }
 
@@ -4056,7 +4006,7 @@ class LMStudioClone {
                     this.ragChunkOverlap.value = config.chunk_overlap || 200;
                 }
                 
-                // Если используется Ollama, загружаем модели
+                // If using Ollama, load models
                 if (config.use_ollama_embeddings) {
                     await this.loadOllamaEmbeddingModels();
                 }
@@ -4064,7 +4014,7 @@ class LMStudioClone {
                 this.logToConsole('Конфигурация RAG загружена', 'success');
             }
         } catch (error) {
-            this.logToConsole(`Ошибка загрузки конфигурации RAG: ${error.message}`, 'error');
+            this.logToConsole(`RAG config load error: ${error.message}`, 'error');
         }
     }
 
@@ -4074,7 +4024,7 @@ class LMStudioClone {
             const data = await response.json();
             
             if (data.status === 'success') {
-                this.ollamaEmbeddingModel.innerHTML = '<option value="">Выберите модель...</option>';
+                this.ollamaEmbeddingModel.innerHTML = '<option value="">Select model...</option>';
                 data.models.forEach(model => {
                     const option = document.createElement('option');
                     option.value = model.name;
@@ -4128,10 +4078,10 @@ class LMStudioClone {
                     this.ragStatus.className = 'rag-status configured';
                     this.logToConsole(data.message, 'success');
                     
-                    // Обновляем статистику RAG
+                    // Update RAG stats
                     await this.updateRagStats();
                 } else {
-                    throw new Error(data.detail || 'Неизвестная ошибка');
+                    throw new Error(data.detail || 'Unknown error');
                 }
         } catch (error) {
             this.ragStatus.textContent = 'Error';
@@ -4280,7 +4230,7 @@ class LMStudioClone {
                     data = JSON.parse(responseText);
                     console.log('Данные ответа (parsed):', data);
                 } catch (parseError) {
-                    console.error('Ошибка парсинга JSON:', parseError);
+                    console.error('JSON parse error:', parseError);
                     console.error('Невалидный JSON:', responseText);
                     throw new Error(`Сервер вернул некорректный ответ: ${responseText.substring(0, 200)}`);
                 }
@@ -4328,7 +4278,7 @@ class LMStudioClone {
                         this.logToConsole(`   📈 Эффективность: ${Math.round((data.processed_chunks / data.file_info.total_length) * 10000)} чанков на 10K символов`, 'info');
                     }
                     
-                    // Обновляем статистику RAG
+                    // Update RAG stats
                     await this.updateRagStats();
                     
                     // Автоматически добавляем документы в MemoRAG
@@ -4385,7 +4335,7 @@ class LMStudioClone {
             this.ragFileUpload.value = '';
             this.logToConsole(`🎉 Все файлы успешно загружены в RAG систему!`, 'success');
         } catch (error) {
-            console.error('Ошибка загрузки файлов:', error);
+            console.error('File upload error:', error);
             const errorMsg = error.message || error.toString();
             
             // Показываем детальное сообщение об ошибке
@@ -4547,7 +4497,7 @@ class LMStudioClone {
                 this.logToConsole(`❌ Ошибка получения статистики RAG: ${data.detail || 'Неизвестная ошибка'}`, 'error');
             }
         } catch (error) {
-            console.error('Ошибка получения статистики RAG:', error);
+            console.error('RAG stats fetch error:', error);
             this.logToConsole(`❌ Ошибка получения статистики RAG: ${error.message}`, 'error');
         } finally {
             // Восстанавливаем кнопку
@@ -4603,7 +4553,7 @@ class LMStudioClone {
                     this.logToConsole(`   📈 Эффективность: ${Math.round((data.processed_chunks / data.total_length) * 10000)} чанков на 10K символов`, 'info');
                 }
                 
-                // Обновляем статистику RAG
+                // Update RAG stats
                 await this.updateRagStats();
                 
                 // Автоматически добавляем документы в MemoRAG
@@ -4611,7 +4561,7 @@ class LMStudioClone {
                 
                 this.ragDocuments.value = '';
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка добавления документов: ${error.message}`, 'error');
@@ -4654,7 +4604,7 @@ class LMStudioClone {
                 this.displaySearchResults(data.results);
                 this.logToConsole(`Найдено ${data.count} результатов`, 'success');
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`Ошибка поиска: ${error.message}`, 'error');
@@ -4710,10 +4660,10 @@ class LMStudioClone {
                 this.logToConsole(data.message, 'success');
                 this.searchResults.style.display = 'none';
                 
-                // Обновляем статистику RAG
+                // Update RAG stats
                 await this.updateRagStats();
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`Ошибка очистки RAG: ${error.message}`, 'error');
@@ -4743,10 +4693,10 @@ class LMStudioClone {
                 this.logToConsole('🗑️ Векторный индекс RAG очищен', 'success');
                 this.searchResults.style.display = 'none';
                 
-                // Обновляем статистику RAG
+                // Update RAG stats
                 await this.updateRagStats();
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка очистки индекса RAG: ${error.message}`, 'error');
@@ -4932,7 +4882,7 @@ class LMStudioClone {
                 this.logToConsole(data.message, 'success');
                 this.refreshLogs();
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`Ошибка очистки логов: ${error.message}`, 'error');
@@ -4969,7 +4919,7 @@ class LMStudioClone {
                 this.logToConsole(`❌ Ошибка получения статистики MemoRAG: ${data.detail || 'Неизвестная ошибка'}`, 'error');
             }
         } catch (error) {
-            console.error('Ошибка получения статистики MemoRAG:', error);
+            console.error('MemoRAG stats fetch error:', error);
             this.logToConsole(`❌ Ошибка получения статистики MemoRAG: ${error.message}`, 'error');
         }
     }
@@ -5003,7 +4953,7 @@ class LMStudioClone {
                     this.updateMemoRagStats();
                 }, 500);
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка очистки памяти MemoRAG: ${error.message}`, 'error');
@@ -5048,7 +4998,7 @@ class LMStudioClone {
                 
                 this.logToConsole('📥 Память MemoRAG экспортирована в файл', 'success');
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка экспорта памяти MemoRAG: ${error.message}`, 'error');
@@ -5089,7 +5039,7 @@ class LMStudioClone {
                 this.displayMemoRagTestResults(data);
                 this.logToConsole(`✅ MemoRAG тест завершен: найдено ${data.count} результатов`, 'success');
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка тестирования MemoRAG: ${error.message}`, 'error');
@@ -5163,7 +5113,7 @@ class LMStudioClone {
             } else if (data.status === 'info') {
                 this.logToConsole(`ℹ️ ${data.message}`, 'info');
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка миграции: ${error.message}`, 'error');
@@ -5190,7 +5140,7 @@ class LMStudioClone {
                     this.logToConsole(`ℹ️ Статус: ${data.rag_documents} документов в RAG, ${data.memo_rag_entries} записей в MemoRAG`, 'info');
                 }
             } else {
-                throw new Error(data.detail || 'Неизвестная ошибка');
+                throw new Error(data.detail || 'Unknown error');
             }
         } catch (error) {
             this.logToConsole(`❌ Ошибка проверки статуса: ${error.message}`, 'error');
@@ -5302,7 +5252,7 @@ class LMStudioClone {
         const selectedPatientId = this.chatPatientSelect.value;
         console.log(`DEBUG: Обновление списка пациентов для чата: найдено ${patients.length} пациентов, текущий выбор: ${selectedPatientId}`);
         
-        // Очищаем список, оставляя только первый элемент
+        // Clear list, оставляя только первый элемент
         this.chatPatientSelect.innerHTML = '<option value="">Выберите пациента...</option>';
         
         if (patients.length === 0) {
@@ -5361,7 +5311,7 @@ class LMStudioClone {
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`DEBUG: Ошибка загрузки пациентов: ${response.status} - ${errorText}`);
+                console.error(`DEBUG: Patient list load error: ${response.status} - ${errorText}`);
                 this.logToConsole(`❌ Ошибка загрузки пациентов: HTTP ${response.status}`, 'error');
                 return;
             }
@@ -5604,7 +5554,7 @@ class LMStudioClone {
                     </div>
                 </div>
                 <div class="patient-info">
-                    ${patient.age ? `Возраст: ${patient.age} лет` : ''}
+                    ${patient.age ? `Age: ${patient.age} years` : ''}
                     ${patient.gender ? ` | Пол: ${this.getGenderText(patient.gender)}` : ''}
                     ${patient.created_at ? ` | Добавлен: ${new Date(patient.created_at).toLocaleDateString('ru-RU')}` : ''}
                 </div>
@@ -5966,7 +5916,7 @@ class LMStudioClone {
             try {
                 await this.processDocumentFile(file);
             } catch (error) {
-                console.error(`DEBUG: Ошибка обработки файла ${file.name}:`, error);
+                console.error(`DEBUG: File processing error ${file.name}:`, error);
                 this.logToConsole(`❌ Ошибка обработки файла ${file.name}: ${error.message}`, 'error');
             }
         }
@@ -6117,7 +6067,7 @@ class LMStudioClone {
             
             return content;
         } catch (error) {
-            console.error('DEBUG: Ошибка обработки файла:', error);
+            console.error('DEBUG: File processing error:', error);
             throw error;
         }
     }
@@ -6172,7 +6122,7 @@ class LMStudioClone {
                 throw new Error(data.detail || 'Ошибка добавления документа');
             }
         } catch (error) {
-            console.log('DEBUG: Ошибка:', error);
+            console.log('DEBUG: Error:', error);
             // Логируем только если это не массовый импорт (ошибки массового импорта обрабатываются отдельно)
             if (manageButton) {
                 this.logToConsole(`❌ Ошибка добавления документа "${fileName}": ${error.message}`, 'error');
@@ -6278,7 +6228,7 @@ class LMStudioClone {
                 throw new Error(data.detail || 'Ошибка добавления документа');
             }
         } catch (error) {
-            console.log('DEBUG: Ошибка:', error);
+            console.log('DEBUG: Error:', error);
             this.logToConsole(`❌ Ошибка добавления документа: ${error.message}`, 'error');
         } finally {
             // Восстанавливаем кнопку
@@ -6462,7 +6412,7 @@ class LMStudioClone {
         this.analysisStartTime = new Date(); // Сохраняем время начала анализа
         this.autoSaveFileName = null; // Сбрасываем имя файла
         this.autoSaveFileHandle = null; // Сбрасываем file handle
-        this.savedPatientIds.clear(); // Очищаем список сохраненных ID
+        this.savedPatientIds.clear(); // Clear list сохраненных ID
 
         try {
             this.logToConsole('🔄 Начинается автоматический анализ всех пациентов...', 'info');
@@ -6619,14 +6569,14 @@ class LMStudioClone {
             const end = text.substring(text.length - availableLength);
             const removedLength = text.length - availableLength;
             
-            return `[... ТЕКСТ ОБРЕЗАН: удалено ${removedLength} символов из начала (было ${text.length}, осталось ${availableLength}). В начале могли быть повторяющиеся вопросы ...]\n\n` + end;
+            return `[... TEXT TRUNCATED: ${removedLength} chars removed from start (was ${text.length}, kept ${availableLength}). Start may have repeated questions ...]\n\n` + end;
         };
 
         // Формируем данные с правильными названиями колонок
         const headers = ['Patient', 'final prompt', 'llm response'];
         const rows = results.map((row) => {
             const prompt = row.prompt || '';
-            const response = row.response || (row.error ? `Ошибка: ${row.error}` : '');
+            const response = row.response || (row.error ? `Error: ${row.error}` : '');
             
             return {
                 'Patient': row.patient_name || `ID ${row.patient_id}`,

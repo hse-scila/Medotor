@@ -15,11 +15,11 @@ class OCRProcessor:
     
     def __init__(self, tesseract_cmd: str = None, languages: str = "rus+eng"):
         """
-        Инициализация OCR процессора
+        Initialize OCR processor.
         
         Args:
-            tesseract_cmd: Путь к исполняемому файлу Tesseract
-            languages: Языки для распознавания (по умолчанию русский + английский)
+            tesseract_cmd: Path to Tesseract executable
+            languages: Languages for recognition (default: Russian + English)
         """
         self.languages = languages
         
@@ -53,13 +53,13 @@ class OCRProcessor:
     
     def preprocess_image(self, image: Image.Image) -> Optional[np.ndarray]:
         """
-        Улучшение качества изображения для OCR
+        Improve image quality for OCR.
         
         Args:
-            image: PIL изображение
+            image: PIL image
             
         Returns:
-            Обработанное изображение в виде numpy массива или None при ошибке
+            Processed image as numpy array or None on error
         """
         try:
             # Convert to numpy array and grayscale
@@ -80,13 +80,13 @@ class OCRProcessor:
     
     def extract_text_from_image(self, image: Image.Image) -> Dict[str, Any]:
         """
-        Извлечение текста из изображения
+        Extract text from image.
         
         Args:
-            image: PIL изображение
+            image: PIL image
             
         Returns:
-            Словарь с результатами распознавания
+            Dict with recognition results
         """
         try:
             # Preprocessing
@@ -94,7 +94,7 @@ class OCRProcessor:
             if processed_image is None:
                 return {
                     "success": False,
-                    "error": "Ошибка предварительной обработки изображения",
+                    "error": "Image preprocessing error",
                     "text": ""
                 }
             
@@ -125,20 +125,20 @@ class OCRProcessor:
     
     def extract_text_from_file(self, file_path: str) -> Dict[str, Any]:
         """
-        Извлечение текста из файла изображения
+        Extract text from image file.
         
         Args:
-            file_path: Путь к файлу изображения
+            file_path: Path to image file
             
         Returns:
-            Словарь с результатами распознавания
+            Dict with recognition results
         """
         try:
             # Check file existence
             if not os.path.exists(file_path):
                 return {
                     "success": False,
-                    "error": f"Файл не найден: {file_path}",
+                    "error": f"File not found: {file_path}",
                     "text": ""
                 }
             
@@ -146,7 +146,7 @@ class OCRProcessor:
             if not self._is_image_file(file_path):
                 return {
                     "success": False,
-                    "error": "Неподдерживаемый формат файла",
+                    "error": "Unsupported file format",
                     "text": ""
                 }
             
@@ -226,27 +226,27 @@ def get_ocr_processor() -> OCRProcessor:
 
 def extract_text_from_image_file(file_path: str) -> Dict[str, Any]:
     """
-    Удобная функция для извлечения текста из файла изображения
+    Convenience function to extract text from image file.
     
     Args:
-        file_path: Путь к файлу изображения
+        file_path: Path to image file
         
     Returns:
-        Словарь с результатами распознавания
+        Dict with recognition results
     """
     processor = get_ocr_processor()
     return processor.extract_text_from_file(file_path)
 
 def extract_text_from_image_data(image_data: bytes, filename: str = "image.jpg") -> Dict[str, Any]:
     """
-    Извлечение текста из данных изображения
+    Extract text from image data.
     
     Args:
-        image_data: Байтовые данные изображения
-        filename: Имя файла (для определения формата)
+        image_data: Image byte data
+        filename: Filename (for format detection)
         
     Returns:
-        Словарь с результатами распознавания
+        Dict with recognition results
     """
     try:
         processor = get_ocr_processor()

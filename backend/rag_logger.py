@@ -50,7 +50,7 @@ class RAGLogger:
         self.recent_logs = []
         self.max_recent_logs = 1000
         
-        self.log_info("RAG Logger инициализирован")
+        self.log_info("RAG Logger initialized")
     
     def _add_to_recent_logs(self, level: str, message: str, extra_data: Optional[Dict] = None):
         """Add log to recent entries cache"""
@@ -103,7 +103,7 @@ class RAGLogger:
             "use_ollama": use_ollama,
             "ollama_model": ollama_model
         }
-        self.log_info(f"Настройка RAG: {vector_store_type}, Ollama: {use_ollama}, Модель: {ollama_model}", extra_data)
+        self.log_info(f"RAG config: {vector_store_type}, Ollama: {use_ollama}, Model: {ollama_model}", extra_data)
     
     def log_document_upload(self, filename: str, chunks_count: int, file_size: int, format: str):
         """Log document upload"""
@@ -114,7 +114,7 @@ class RAGLogger:
             "file_size": file_size,
             "format": format
         }
-        self.log_info(f"Загружен документ: {filename} ({chunks_count} чанков, {file_size} байт)", extra_data)
+        self.log_info(f"Document loaded: {filename} ({chunks_count} chunks, {file_size} bytes)", extra_data)
     
     def log_document_add(self, documents_count: int, total_chunks: int):
         """Log document addition"""
@@ -123,7 +123,7 @@ class RAGLogger:
             "documents_count": documents_count,
             "total_chunks": total_chunks
         }
-        self.log_info(f"Добавлено документов: {documents_count} ({total_chunks} чанков)", extra_data)
+        self.log_info(f"Documents added: {documents_count} ({total_chunks} chunks)", extra_data)
     
     def log_search(self, query: str, results_count: int, search_time: float):
         """Log search"""
@@ -133,7 +133,7 @@ class RAGLogger:
             "results_count": results_count,
             "search_time": search_time
         }
-        self.log_info(f"Поиск: '{query}' -> {results_count} результатов за {search_time:.3f}с", extra_data)
+        self.log_info(f"Search: '{query}' -> {results_count} results in {search_time:.3f}s", extra_data)
     
     def log_embedding_creation(self, texts_count: int, embedding_dimension: int, model: str):
         """Log embedding creation"""
@@ -143,7 +143,7 @@ class RAGLogger:
             "embedding_dimension": embedding_dimension,
             "model": model
         }
-        self.log_info(f"Создание эмбеддингов: {texts_count} текстов, размерность: {embedding_dimension}, модель: {model}", extra_data)
+        self.log_info(f"Embedding creation: {texts_count} texts, dimension: {embedding_dimension}, model: {model}", extra_data)
     
     def log_ollama_connection(self, url: str, success: bool, models_count: int = 0):
         """Log Ollama connection"""
@@ -154,9 +154,9 @@ class RAGLogger:
             "models_count": models_count
         }
         if success:
-            self.log_info(f"Подключение к Ollama успешно: {url} ({models_count} моделей)", extra_data)
+            self.log_info(f"Ollama connection successful: {url} ({models_count} models)", extra_data)
         else:
-            self.log_error(f"Ошибка подключения к Ollama: {url}", extra_data)
+            self.log_error(f"Ollama connection error: {url}", extra_data)
     
     def log_file_processing(self, filename: str, format: str, success: bool, error: Optional[str] = None):
         """Log file processing"""
@@ -168,9 +168,9 @@ class RAGLogger:
             "error": error
         }
         if success:
-            self.log_info(f"Файл обработан: {filename} ({format})", extra_data)
+            self.log_info(f"File processed: {filename} ({format})", extra_data)
         else:
-            self.log_error(f"Ошибка обработки файла {filename}: {error}", extra_data)
+            self.log_error(f"File processing error {filename}: {error}", extra_data)
     
     def log_vector_store_operation(self, operation: str, vector_store_type: str, success: bool, details: Optional[Dict] = None):
         """Log vector store operations"""
@@ -181,9 +181,9 @@ class RAGLogger:
             "details": details or {}
         }
         if success:
-            self.log_info(f"Операция с {vector_store_type}: {operation}", extra_data)
+            self.log_info(f"Vector store operation {vector_store_type}: {operation}", extra_data)
         else:
-            self.log_error(f"Ошибка операции с {vector_store_type}: {operation}", extra_data)
+            self.log_error(f"Vector store operation error {vector_store_type}: {operation}", extra_data)
     
     def log_rag_chat(self, query: str, used_rag: bool, relevant_docs_count: int, response_time: float):
         """Log RAG chat"""
@@ -194,7 +194,7 @@ class RAGLogger:
             "relevant_docs_count": relevant_docs_count,
             "response_time": response_time
         }
-        self.log_info(f"RAG чат: '{query}', RAG: {used_rag}, документов: {relevant_docs_count}, время: {response_time:.3f}с", extra_data)
+        self.log_info(f"RAG chat: '{query}', RAG: {used_rag}, docs: {relevant_docs_count}, time: {response_time:.3f}s", extra_data)
     
     def get_recent_logs(self, limit: int = 100, level: Optional[str] = None) -> List[Dict]:
         """Get recent logs"""
@@ -243,7 +243,7 @@ class RAGLogger:
         if self.log_file.exists():
             self.log_file.unlink()
         
-        self.log_info("Логи очищены")
+        self.log_info("Logs cleared")
 
 
 # Global RAG logger instance
