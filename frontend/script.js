@@ -3504,7 +3504,7 @@ class LMStudioClone {
         
         if (!this.modelSelect) {
             console.error('DEBUG: loadOllamaModels: modelSelect not found! Retrying...');
-            // Попробуем найти элемент еще раз через небольшую задержку
+            // Retry finding element after short delay
             await new Promise(resolve => setTimeout(resolve, 100));
             this.modelSelect = document.getElementById('modelSelect');
             if (!this.modelSelect) {
@@ -3535,7 +3535,7 @@ class LMStudioClone {
                     ollamaModels = data.models;
                     console.log('DEBUG: loadOllamaModels: data.models - это массив');
                 } else if (data.models && typeof data.models === 'object' && !Array.isArray(data.models)) {
-                    // Если models - это объект (не массив), преобразуем в массив
+                    // If models is object (not array), convert to array
                     ollamaModels = Object.values(data.models);
                     console.log('DEBUG: loadOllamaModels: data.models - это объект, преобразован в массив');
                 } else if (data.data && Array.isArray(data.data)) {
@@ -3601,7 +3601,7 @@ class LMStudioClone {
                 console.log(`DEBUG: loadOllamaModels: Добавлено новых: ${addedCount}, пропущено (уже есть): ${skippedCount}`);
                 
                 // Add models to action list
-                // Переинициализируем selectedModelForAction на случай, если DOM еще не готов
+                // Re-resolve selectedModelForAction in case DOM not ready
                 if (!this.selectedModelForAction) {
                     this.selectedModelForAction = document.getElementById('selectedModelForAction');
                 }
@@ -3647,7 +3647,7 @@ class LMStudioClone {
         }
     }
 
-    // Новые методы для управления Ollama
+    // Ollama management methods
     async applyOllamaConfig() {
         const mode = this.ollamaMode.value;
         const ollamaUrlInput = document.getElementById('ollamaUrl');
@@ -3674,7 +3674,7 @@ class LMStudioClone {
             
             this.logToConsole(`✅ Connected to Ollama (${connectData.models_count} models)`, 'success');
             
-            // Применяем режим
+            // Apply mode
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/ollama/config`, {
                 method: 'POST',
                 headers: {
@@ -3838,7 +3838,7 @@ class LMStudioClone {
             this.useSystemPrompt.checked = savedUsePrompt === 'true';
         }
         
-        // Показываем состояние чекбокса
+        // Show checkbox state
         this.logToConsole(`📋 System prompt usage: ${this.useSystemPrompt.checked ? 'on' : 'off'}`, 'info');
         
         this.logToConsole('System prompt loaded', 'success');
@@ -3913,7 +3913,7 @@ class LMStudioClone {
         
         this.logToConsole('System prompt saved', 'success');
         
-        // Визуальная обратная связь
+        // Visual feedback
         this.saveSystemPromptBtn.innerHTML = '<i class="fas fa-check"></i> Сохранено';
         setTimeout(() => {
             this.saveSystemPromptBtn.innerHTML = '<i class="fas fa-save"></i> Сохранить';
@@ -3963,14 +3963,14 @@ class LMStudioClone {
     }
 
     autoSaveSystemPrompt() {
-        // Автосохранение с задержкой
+        // Auto-save with delay
         clearTimeout(this.autoSaveTimeout);
         this.autoSaveTimeout = setTimeout(() => {
             this.saveSystemPrompt();
         }, 2000);
     }
 
-    // RAG методы
+    // RAG methods
     toggleOllamaEmbeddings() {
         if (this.useOllamaEmbeddings.checked) {
             this.ollamaEmbeddingGroup.style.display = 'block';
@@ -3988,7 +3988,7 @@ class LMStudioClone {
             if (data.status === 'success') {
                 const config = data.config;
                 
-                // Устанавливаем значения из конфигурации
+                // Set values from config
                 if (this.ragVectorStore) {
                     this.ragVectorStore.value = config.vector_store_type || 'faiss';
                 }
@@ -4087,7 +4087,7 @@ class LMStudioClone {
             this.ragStatus.textContent = 'Error';
             this.ragStatus.className = 'rag-status error';
             
-            // Более понятные сообщения об ошибках
+            // Clearer error messages
             let errorMessage = error.message;
             if (errorMessage.includes('FAISS не установлен')) {
                 errorMessage = 'FAISS не установлен. Установите faiss-cpu: pip install faiss-cpu';
@@ -4107,7 +4107,7 @@ class LMStudioClone {
         const chunks = [];
         
         if (file.size <= chunkSizeBytes) {
-            // Файл не нужно разбивать
+            // File does not need splitting
             return [file];
         }
         
@@ -4120,7 +4120,7 @@ class LMStudioClone {
             const end = Math.min(start + chunkSizeBytes, file.size);
             const chunk = file.slice(start, end);
             
-            // Создаем новый файл с именем части
+            // Create new file with part name
             const chunkFileName = `${file.name.replace(/\.[^/.]+$/, '')}_part${chunkIndex}${file.name.match(/\.[^/.]+$/)?.[0] || ''}`;
             const chunkFile = new File([chunk], chunkFileName, { type: file.type });
             
@@ -4142,7 +4142,7 @@ class LMStudioClone {
             return;
         }
 
-        // Сбрасываем флаг остановки при начале новой загрузки
+        // Reset stop flag at start of new upload
         this.shouldStopEmbedding = false;
         this.isEmbeddingInProgress = false;
 
@@ -4150,19 +4150,19 @@ class LMStudioClone {
         this.uploadFileBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
 
         try {
-            // Подготавливаем список всех файлов для обработки (включая части)
+            // Build list of all files to process (including parts)
             let allFilesToProcess = [];
             
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 
-                // Проверяем флаг остановки в каждой итерации
+                // Check stop flag each iteration
                 if (this.shouldStopEmbedding) {
                     this.logToConsole('🛑 Обработка файлов остановлена пользователем', 'warning');
                     break;
                 }
                 
-                // Проверяем, нужно ли разбивать файл
+                // Check if file needs splitting
                 const shouldChunk = this.enableFileChunking.checked && file.size > 10 * 1024 * 1024; // >10MB
                 
                 if (shouldChunk) {
@@ -4176,9 +4176,9 @@ class LMStudioClone {
             
             this.logToConsole(`📁 Всего файлов для обработки: ${allFilesToProcess.length}`, 'info');
             
-            // Обрабатываем все файлы (включая части)
+            // Process all files (including parts)
             for (let i = 0; i < allFilesToProcess.length; i++) {
-                // Проверяем флаг остановки в каждой итерации
+                // Check stop flag each iteration
                 if (this.shouldStopEmbedding) {
                     this.logToConsole('🛑 Обработка файлов остановлена пользователем', 'warning');
                     break;
@@ -4192,7 +4192,7 @@ class LMStudioClone {
                 
                 this.logToConsole(`📁 Обработка файла ${fileNumber}/${totalFiles}: ${file.name}`, 'info');
                 
-                // Показываем индикатор сразу, чтобы не было ощущения "зависания"
+                // Show indicator immediately to avoid "hanging" feel
                 if (this.uploadProgress) {
                     this.uploadProgress.style.display = 'block';
                 }
@@ -4221,7 +4221,7 @@ class LMStudioClone {
 
                 console.log('Ответ сервера:', response.status, response.statusText);
                 
-                // Читаем ответ как текст сначала, чтобы не потерять ошибки парсинга
+                // Read response as text first to avoid losing parse errors
                 const responseText = await response.text();
                 console.log('Ответ сервера (raw):', responseText);
                 
@@ -4235,18 +4235,18 @@ class LMStudioClone {
                     throw new Error(`Сервер вернул некорректный ответ: ${responseText.substring(0, 200)}`);
                 }
                 
-                // Проверяем наличие данных и статус
+                // Check data and status
                 if (!data) {
                     throw new Error(`Сервер вернул пустой ответ. HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                // Проверяем статус HTTP ответа
+                // Check HTTP response status
                 if (!response.ok) {
                     const errorMessage = data.error || data.detail || data.message || `HTTP ${response.status}: ${response.statusText}`;
                     throw new Error(`Ошибка сервера: ${errorMessage}`);
                 }
                 
-                // Проверяем статус в данных (даже если HTTP 200, status может быть 'error')
+                // Check status in data (even if HTTP 200, status can be 'error')
                 if (data.status === 'success') {
                     const fileSizeKB = Math.round(file.size / 1024);
                     const fileSizeMB = (fileSizeKB / 1024).toFixed(2);
@@ -4269,10 +4269,10 @@ class LMStudioClone {
                         }
                     }
                     
-                    // Показываем прогресс создания эмбеддингов
+                    // Show embedding creation progress
                     await this.showEmbeddingProgress(data.processed_chunks);
                     
-                    // Показываем итоговую статистику
+                    // Show final stats
                     this.logToConsole(`🎉 Файл полностью интегрирован в RAG систему!`, 'success');
                     if (data.file_info.total_length > 0) {
                         this.logToConsole(`   📈 Эффективность: ${Math.round((data.processed_chunks / data.file_info.total_length) * 10000)} чанков на 10K символов`, 'info');
@@ -4281,10 +4281,10 @@ class LMStudioClone {
                     // Update RAG stats
                     await this.updateRagStats();
                     
-                    // Автоматически добавляем документы в MemoRAG
+                    // Auto-add documents to MemoRAG
                     await this.addDocumentsToMemoRag(data.chunks);
                     
-                    // Если прогресс по WebSocket не пришел, завершаем индикатор вручную
+                    // If WebSocket progress never came, finish indicator manually
                     if (this.uploadProgress) {
                         if (this.progressTitle) {
                             this.progressTitle.textContent = 'Embedding complete';
@@ -4302,7 +4302,7 @@ class LMStudioClone {
                     }
                     
                 } else {
-                    // Детальная обработка ошибки (status !== 'success')
+                    // Detailed error handling (status !== 'success')
                     const errorMessage = data.error || data.detail || data.message || data.status || 'Неизвестная ошибка';
                     
                     console.error('Детали ошибки загрузки:', {
@@ -4312,10 +4312,10 @@ class LMStudioClone {
                         data: data
                     });
                     
-                    // Показываем детальную информацию об ошибке
+                    // Show detailed error info
                     let detailedError = `Ошибка загрузки файла ${file.name}: ${errorMessage}`;
                     
-                    // Специальные сообщения для типичных ошибок
+                    // Specific messages for common errors
                     if (errorMessage.includes('PyPDF2') || errorMessage.includes('не установлен')) {
                         detailedError += '\n💡 Установите: pip install PyPDF2';
                     } else if (errorMessage.includes('Неподдерживаемый формат')) {
@@ -4338,10 +4338,10 @@ class LMStudioClone {
             console.error('File upload error:', error);
             const errorMsg = error.message || error.toString();
             
-            // Показываем детальное сообщение об ошибке
+            // Show detailed error message
             this.logToConsole(`❌ Ошибка загрузки файлов: ${errorMsg}`, 'error');
             
-            // Если ошибка содержит полезную информацию, выводим её отдельными строками
+            // If error has useful info, output line by line
             if (errorMsg.includes('\n')) {
                 const lines = errorMsg.split('\n');
                 for (let i = 1; i < lines.length; i++) {
@@ -4351,7 +4351,7 @@ class LMStudioClone {
                 }
             }
             
-            // Скрываем прогресс при ошибке, чтобы не висел индикатор
+            // Hide progress on error so indicator does not hang
             if (this.uploadProgress) {
                 this.uploadProgress.style.display = 'none';
             }
@@ -4362,7 +4362,7 @@ class LMStudioClone {
             this.uploadFileBtn.disabled = false;
             this.uploadFileBtn.innerHTML = '<i class="fas fa-upload"></i> Загрузить файлы';
             
-            // Сбрасываем флаги в любом случае
+            // Reset flags in any case
             this.shouldStopEmbedding = false;
             this.isEmbeddingInProgress = false;
             this.stopEmbeddingBtn.style.display = 'none';
@@ -4370,14 +4370,14 @@ class LMStudioClone {
     }
 
     async showEmbeddingProgress(totalChunks) {
-        // Показываем начальное состояние прогресса
+        // Show initial progress state
         this.uploadProgress.style.display = 'block';
         this.progressTitle.textContent = 'Creating embeddings...';
         this.progressPercent.textContent = '0%';
         this.progressFill.style.width = '0%';
         this.progressDetails.textContent = `Processing ${totalChunks} documents...`;
         
-        // Показываем кнопку остановки для больших файлов
+        // Show stop button for large files
         if (totalChunks > 1000) {
             this.stopEmbeddingBtn.style.display = 'inline-block';
             this.isEmbeddingInProgress = true;
@@ -4387,7 +4387,7 @@ class LMStudioClone {
         this.logToConsole(`   🔄 Начато создание эмбеддингов для ${totalChunks} чанков`, 'info');
         this.logToConsole(`   📡 Подключение к серверу для отслеживания прогресса...`, 'info');
         
-        // Предупреждение для больших файлов
+        // Warning for large files
         if (totalChunks > 10000) {
             this.logToConsole(`⚠️ ВНИМАНИЕ: Обработка ${totalChunks} документов может занять много времени!`, 'warning');
             this.logToConsole(`💡 Рекомендуется разбить файл на части или использовать кнопку "Остановить" при необходимости`, 'info');
@@ -4403,10 +4403,10 @@ class LMStudioClone {
         this.logToConsole('⚠️ Частично обработанные данные могут быть сохранены', 'info');
         this.logToConsole('💡 Для новой загрузки просто выберите файлы снова', 'info');
         
-        // Скрываем прогресс-бар
+        // Hide progress bar
         this.uploadProgress.style.display = 'none';
         
-        // Включаем кнопки обратно
+        // Re-enable buttons
         this.uploadFileBtn.disabled = false;
         this.uploadFileBtn.innerHTML = '<i class="fas fa-upload"></i> Загрузить файлы';
         this.addDocumentsBtn.disabled = false;
@@ -4424,7 +4424,7 @@ class LMStudioClone {
     }
 
     async updateRagStats() {
-        // Добавляем визуальную обратную связь
+        // Add visual feedback
         const originalText = this.refreshRagStatsBtn.innerHTML;
         this.refreshRagStatsBtn.disabled = true;
         this.refreshRagStatsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
@@ -4441,7 +4441,7 @@ class LMStudioClone {
                 const stats = data.stats;
                 console.log('RAG Stats Data:', stats);
                 
-                // Обновляем все поля статистики
+                // Update all stats fields
                 console.log('Обновление статистики RAG:', stats);
                 console.log('Элементы DOM:', {
                     ragStatusValue: !!this.ragStatusValue,
@@ -4473,7 +4473,7 @@ class LMStudioClone {
                 if (this.ragEmbeddingCreatedAt) {
                     const createdAt = stats.embedding_created_at;
                     if (createdAt) {
-                        // Форматируем дату для отображения
+                        // Format date for display
                         const date = new Date(createdAt);
                         this.ragEmbeddingCreatedAt.textContent = date.toLocaleString('ru-RU');
                     } else {
@@ -4482,7 +4482,7 @@ class LMStudioClone {
                 }
                 if (this.ragUseOllama) this.ragUseOllama.textContent = stats.use_ollama ? 'Да' : 'Нет';
                 
-                // Обновляем цвет статуса
+                // Update status color
                 if (this.ragStatusValue) {
                     if (stats.status === 'ready') {
                         this.ragStatusValue.style.color = '#4caf50';
@@ -4500,7 +4500,7 @@ class LMStudioClone {
             console.error('RAG stats fetch error:', error);
             this.logToConsole(`❌ Ошибка получения статистики RAG: ${error.message}`, 'error');
         } finally {
-            // Восстанавливаем кнопку
+            // Restore button
             this.refreshRagStatsBtn.disabled = false;
             this.refreshRagStatsBtn.innerHTML = originalText;
         }
@@ -4513,7 +4513,7 @@ class LMStudioClone {
             return;
         }
 
-        // Сбрасываем флаг остановки при начале новой загрузки
+        // Reset stop flag at start of new upload
         this.shouldStopEmbedding = false;
         this.isEmbeddingInProgress = false;
 
@@ -4544,10 +4544,10 @@ class LMStudioClone {
                 this.logToConsole(`   📝 Общая длина текста: ${data.total_length || 'неизвестно'} символов`, 'info');
                 this.logToConsole(`   🔄 Создание эмбеддингов...`, 'info');
                 
-                // Показываем прогресс создания эмбеддингов
+                // Show embedding creation progress
                 await this.showEmbeddingProgress(data.processed_chunks);
                 
-                // Показываем итоговую статистику
+                // Show final stats
                 this.logToConsole(`🎉 Документы полностью интегрированы в RAG систему!`, 'success');
                 if (data.total_length) {
                     this.logToConsole(`   📈 Эффективность: ${Math.round((data.processed_chunks / data.total_length) * 10000)} чанков на 10K символов`, 'info');
@@ -4556,7 +4556,7 @@ class LMStudioClone {
                 // Update RAG stats
                 await this.updateRagStats();
                 
-                // Автоматически добавляем документы в MemoRAG
+                // Auto-add documents to MemoRAG
                 await this.addDocumentsToMemoRag(data.chunks);
                 
                 this.ragDocuments.value = '';
@@ -4569,7 +4569,7 @@ class LMStudioClone {
             this.addDocumentsBtn.disabled = false;
             this.addDocumentsBtn.innerHTML = '<i class="fas fa-plus"></i> Добавить документы';
             
-            // Сбрасываем флаги в любом случае
+            // Reset flags in any case
             this.shouldStopEmbedding = false;
             this.isEmbeddingInProgress = false;
             this.stopEmbeddingBtn.style.display = 'none';
@@ -4682,7 +4682,7 @@ class LMStudioClone {
         this.clearRagIndexBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Очистка индекса...';
 
         try {
-            // Сначала очищаем документы (что также очистит индекс)
+            // First clear documents (which also clears index)
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/rag/documents`, {
                 method: 'DELETE'
             });
@@ -4710,7 +4710,7 @@ class LMStudioClone {
             return;
         }
 
-        // Дополнительное подтверждение
+        // Extra confirmation
         if (!confirm('Последнее предупреждение!\n\nВы действительно хотите полностью сбросить RAG систему?\n\nВведите "СБРОС" в следующем окне для подтверждения.')) {
             return;
         }
@@ -4725,7 +4725,7 @@ class LMStudioClone {
         this.resetRagBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Полный сброс...';
 
         try {
-            // 1. Очищаем документы
+            // 1. Clear documents
             this.logToConsole('🔄 Шаг 1/4: Очистка документов...', 'info');
             const clearResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/rag/documents`, { method: 'DELETE' });
             const clearData = await clearResponse.json();
@@ -4736,10 +4736,10 @@ class LMStudioClone {
                 throw new Error(clearData.detail || 'Ошибка очистки документов');
             }
 
-            // Небольшая пауза для завершения операции
+            // Short pause for operation to complete
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 2. Очищаем логи
+            // 2. Clear logs
             this.logToConsole('🔄 Шаг 2/4: Очистка логов...', 'info');
             const logsResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/rag/logs`, { method: 'DELETE' });
             const logsData = await logsResponse.json();
@@ -4750,10 +4750,10 @@ class LMStudioClone {
                 this.logToConsole('⚠️ Предупреждение: не удалось очистить логи', 'warning');
             }
 
-            // Небольшая пауза для завершения операции
+            // Short pause for operation to complete
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 3. Сбрасываем настройки RAG (перезагружаем с настройками по умолчанию)
+            // 3. Reset RAG settings (reload with defaults)
             this.logToConsole('🔄 Шаг 3/4: Сброс настроек...', 'info');
             const configResponse = await this.fetchWithTimeout(`${this.apiBaseUrl}/rag/config`, {
                 method: 'POST',
@@ -4774,17 +4774,17 @@ class LMStudioClone {
                 throw new Error(configData.detail || 'Ошибка сброса настроек');
             }
 
-            // Небольшая пауза для завершения операции
+            // Short pause for operation to complete
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 4. Обновляем статистику
+            // 4. Update stats
             this.logToConsole('🔄 Шаг 4/4: Обновление статистики...', 'info');
             await this.updateRagStats();
 
             this.logToConsole('🎉 RAG система полностью сброшена!', 'success');
             this.logToConsole('💡 Теперь вы можете заново настроить RAG систему', 'info');
             
-            // Очищаем результаты поиска
+            // Clear search results
             this.searchResults.style.display = 'none';
             
         } catch (error) {
@@ -4795,7 +4795,7 @@ class LMStudioClone {
         }
     }
 
-    // Методы для работы с логами RAG
+    // RAG log methods
     async refreshLogs() {
         try {
             const level = this.logLevelFilter.value || undefined;
@@ -4859,7 +4859,7 @@ class LMStudioClone {
             this.logEntries.appendChild(logEntry);
         });
         
-        // Прокручиваем к последнему логу
+        // Scroll to latest log
         this.logEntries.scrollTop = this.logEntries.scrollHeight;
     }
 
@@ -4892,7 +4892,7 @@ class LMStudioClone {
         }
     }
     
-    // MemoRAG методы
+    // MemoRAG methods
     
     async updateMemoRagStats() {
         try {
@@ -4904,7 +4904,7 @@ class LMStudioClone {
             if (response.ok && data.status === 'success') {
                 const stats = data.memory_stats;
                 
-                // Обновляем статистику памяти
+                // Update memory stats
                 if (this.memoragTotalEntries) this.memoragTotalEntries.textContent = stats.total_entries || 0;
                 if (this.memoragFacts) this.memoragFacts.textContent = stats.memory_types?.fact || 0;
                 if (this.memoragConcepts) this.memoragConcepts.textContent = stats.memory_types?.concept || 0;
@@ -4942,13 +4942,13 @@ class LMStudioClone {
             if (response.ok && data.status === 'success') {
                 this.logToConsole('🗑️ Память MemoRAG очищена', 'success');
                 
-                // Показываем статистику до и после очистки
+                // Show stats before and after clear
                 if (data.stats_before && data.stats_after) {
                     this.logToConsole(`📊 До очистки: ${data.stats_before.total_entries} записей`, 'info');
                     this.logToConsole(`📊 После очистки: ${data.stats_after.total_entries} записей`, 'info');
                 }
                 
-                // Небольшая задержка перед обновлением статистики
+                // Short delay before refreshing stats
                 setTimeout(() => {
                     this.updateMemoRagStats();
                 }, 500);
@@ -4973,7 +4973,7 @@ class LMStudioClone {
             if (response.ok && data.status === 'success') {
                 const stats = data.memory_stats;
                 
-                // Создаем JSON файл для экспорта
+                // Create JSON file for export
                 const exportData = {
                     timestamp: new Date().toISOString(),
                     memory_stats: stats,
@@ -5150,7 +5150,7 @@ class LMStudioClone {
     async checkOCRStatus() {
         try {
             this.logToConsole('🔎 Проверка статуса OCR сервиса...', 'info');
-            // Пробуем стандартный эндпоинт статуса OCR
+            // Try standard OCR status endpoint
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/ocr/status`, {}, 7000);
             let data = null;
             try { data = await response.json(); } catch (_) {}
@@ -5163,7 +5163,7 @@ class LMStudioClone {
                 this.logToConsole(`⚠️ OCR статус: ${detail}`, 'warning');
             }
         } catch (error) {
-            // Если эндпоинт отсутствует или сервис недоступен — не падаем, только предупреждаем
+            // If endpoint missing or service down, do not throw, only warn
             this.logToConsole(`⚠️ OCR недоступен или не сконфигурирован: ${error.message}`, 'warning');
         }
     }
@@ -5190,7 +5190,7 @@ class LMStudioClone {
             
             if (response.ok && data.status === 'success') {
                 this.logToConsole(`✅ Документы добавлены в MemoRAG память: ${chunks.length} чанков`, 'success');
-                // Обновляем статистику MemoRAG
+                // Update MemoRAG stats
                 this.updateMemoRagStats();
             } else {
                 this.logToConsole(`⚠️ Предупреждение: не удалось добавить документы в MemoRAG: ${data.detail || 'Неизвестная ошибка'}`, 'warning');
@@ -5200,7 +5200,7 @@ class LMStudioClone {
         }
     }
 
-    // Методы для работы с пациентами
+    // Patient methods
     async updatePatientsStats() {
         try {
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients/stats`);
@@ -5230,9 +5230,9 @@ class LMStudioClone {
                 this.displayPatientsList(data);
                 this.updatePatientsSelect(data);
                 this.updateChatPatientsSelect(data);
-                // Сохраняем список всех пациентов для выборки
+                // Store full patient list for selection
                 this.allPatientsList = Array.isArray(data) ? data : [];
-                // Обновляем информацию о количестве для анализа
+                // Update count info for analysis
                 this.updatePatientAnalysisCount();
             } else {
                 throw new Error(data.detail || 'Ошибка получения списка пациентов');
@@ -5248,11 +5248,11 @@ class LMStudioClone {
             return;
         }
         
-        // Сохраняем выбранного пациента перед обновлением
+        // Save selected patient before refresh
         const selectedPatientId = this.chatPatientSelect.value;
         console.log(`DEBUG: Обновление списка пациентов для чата: найдено ${patients.length} пациентов, текущий выбор: ${selectedPatientId}`);
         
-        // Clear list, оставляя только первый элемент
+        // Clear list, keep only first option
         this.chatPatientSelect.innerHTML = '<option value="">Выберите пациента...</option>';
         
         if (patients.length === 0) {
@@ -5272,10 +5272,10 @@ class LMStudioClone {
             this.chatPatientSelect.appendChild(option);
         });
         
-        // Восстанавливаем выбор из сохраненного значения или localStorage
+        // Restore selection from saved value or localStorage
         let patientToRestore = selectedPatientId;
         if (!patientToRestore) {
-            // Проверяем localStorage
+            // Check localStorage
             const savedPatientId = localStorage.getItem('lm-studio-selected-patient-id');
             if (savedPatientId) {
                 patientToRestore = savedPatientId;
@@ -5283,14 +5283,14 @@ class LMStudioClone {
             }
         }
         
-        // Восстанавливаем выбор, если пациент существует
+        // Restore selection if patient exists
         if (patientToRestore) {
             const patientExists = patients.some(p => String(p.id) === String(patientToRestore));
             if (patientExists) {
                 this.chatPatientSelect.value = patientToRestore;
                 console.log(`DEBUG: Восстановлен выбор пациента: ${patientToRestore}`);
                 
-                // Подтверждаем выбор пользователю
+                // Confirm selection to user
                 const restoredOption = this.chatPatientSelect.options[this.chatPatientSelect.selectedIndex];
                 if (restoredOption) {
                     console.log(`DEBUG: Выбранный пациент: ${restoredOption.textContent}`);
@@ -5337,27 +5337,27 @@ class LMStudioClone {
     }
     
     clearChatHistory() {
-        // Очищаем историю сообщений
+        // Clear message history
         this.chatHistory = [];
         
-        // Очищаем ВСЕ визуальные сообщения в чате (включая системные)
+        // Clear ALL visible messages in chat (including system)
         const messages = this.chatMessages.querySelectorAll('.chat-entry');
         messages.forEach(message => message.remove());
         
-        // НЕ добавляем никаких системных сообщений - чат должен быть полностью пустым
+        // Do NOT add any system messages - chat must be fully empty
         
         this.logToConsole('🗑️ История чата очищена', 'info');
     }
     
     async diagnosisSystem() {
-        // Функция диагностики системы для отладки
+        // System diagnostics for debugging
         this.logToConsole('🔧 Запуск диагностики системы...', 'info');
         
-        // Проверяем состояние модели
+        // Check model state
         this.logToConsole(`📋 Текущая модель: ${this.currentModel || 'не загружена'}`, 'info');
         this.logToConsole(`🔌 Статус подключения: ${this.isConnected ? 'подключен' : 'не подключен'}`, 'info');
         
-        // Проверяем доступность сервера
+        // Check server availability
         try {
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/health`);
             this.logToConsole(`🏥 Сервер API: ${response.ok ? 'работает' : 'недоступен'}`, response.ok ? 'success' : 'error');
@@ -5365,7 +5365,7 @@ class LMStudioClone {
             this.logToConsole(`🏥 Сервер API: недоступен (${error.message})`, 'error');
         }
         
-        // Проверяем Ollama (если используется)
+        // Check Ollama (if used)
         if (this.currentModel && this.currentModel.startsWith('ollama:')) {
             try {
                 const response = await this.fetchWithTimeout(`${this.ollamaUrl}/api/tags`);
@@ -5389,7 +5389,7 @@ class LMStudioClone {
         }
         
         try {
-            // Создаем объект экспорта с метаданными
+            // Create export object with metadata
             const exportData = {
                 version: '1.0',
                 exportDate: new Date().toISOString(),
@@ -5401,14 +5401,14 @@ class LMStudioClone {
                 messages: this.chatHistory
             };
             
-            // Создаем JSON строку
+            // Create JSON string
             const jsonString = JSON.stringify(exportData, null, 2);
             
-            // Создаем blob и ссылку для скачивания
+            // Create blob and download link
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
-            // Создаем временную ссылку для скачивания
+            // Create temporary download link
             const a = document.createElement('a');
             a.href = url;
             a.download = `chat-history-${new Date().toISOString().split('T')[0]}.json`;
@@ -5416,7 +5416,7 @@ class LMStudioClone {
             a.click();
             document.body.removeChild(a);
             
-            // Освобождаем память
+            // Free memory
             URL.revokeObjectURL(url);
             
             this.logToConsole(`✅ История чата экспортирована (${this.chatHistory.length} сообщений)`, 'success');
@@ -5427,7 +5427,7 @@ class LMStudioClone {
     }
     
     importChatHistory() {
-        // Триггерим выбор файла
+        // Trigger file picker
         if (this.importChatHistoryInput) {
             this.importChatHistoryInput.click();
         }
@@ -5437,7 +5437,7 @@ class LMStudioClone {
         const file = event.target.files[0];
         if (!file) return;
         
-        // Проверяем тип файла
+        // Check file type
         if (!file.name.toLowerCase().endsWith('.json')) {
             this.logToConsole('❌ Файл должен быть в формате JSON', 'error');
             return;
@@ -5459,22 +5459,22 @@ class LMStudioClone {
         
         reader.readAsText(file);
         
-        // Очищаем input для возможности повторного выбора того же файла
+        // Clear input so same file can be selected again
         event.target.value = '';
     }
     processImportedHistory(importData) {
         try {
-            // Валидация структуры данных
+            // Validate data structure
             if (!importData.messages || !Array.isArray(importData.messages)) {
                 throw new Error('Неверный формат файла: отсутствует массив сообщений');
             }
             
-            // Проверяем версию файла
+            // Check file version
             if (importData.version && importData.version !== '1.0') {
                 this.logToConsole(`⚠️ Файл создан в версии ${importData.version}, возможны несовместимости`, 'warning');
             }
             
-            // Валидируем каждое сообщение
+            // Validate each message
             const validMessages = [];
             for (const msg of importData.messages) {
                 if (msg.role && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
@@ -5490,7 +5490,7 @@ class LMStudioClone {
                 throw new Error('В файле нет валидных сообщений');
             }
             
-            // Подтверждение импорта
+            // Import confirmation
             const confirmMessage = `Импортировать ${validMessages.length} сообщений из файла?\n\n` +
                                  `Дата экспорта: ${importData.exportDate ? new Date(importData.exportDate).toLocaleString() : 'неизвестно'}\n` +
                                  `Модель: ${importData.model || 'неизвестно'}\n` +
@@ -5501,18 +5501,18 @@ class LMStudioClone {
                 return;
             }
             
-            // Очищаем текущую историю
+            // Clear current history
             this.clearChatHistory();
             
-            // Импортируем сообщения
+            // Import messages
             this.chatHistory = validMessages;
             
-            // Восстанавливаем визуальные сообщения
+            // Restore visible messages
             validMessages.forEach(msg => {
                 this.addMessage(msg.content, msg.role);
             });
             
-            // Восстанавливаем настройки, если они есть
+            // Restore settings if present
             if (importData.patientId && this.chatPatientSelect) {
                 this.chatPatientSelect.value = importData.patientId;
             }
@@ -5527,7 +5527,7 @@ class LMStudioClone {
             
             this.logToConsole(`✅ История чата импортирована (${validMessages.length} сообщений)`, 'success');
             
-            // Добавляем информационное сообщение
+            // Add info message
             this.addMessage(`История беседы импортирована из файла. Загружено ${validMessages.length} сообщений.`, 'system');
             
         } catch (error) {
@@ -5622,13 +5622,13 @@ class LMStudioClone {
             if (response.ok) {
                 this.logToConsole(`✅ Пациент "${data.name}" добавлен (ID: ${data.id})`, 'success');
                 
-                // Очищаем форму
+                // Clear form
                 this.patientName.value = '';
                 if (this.patientAge) this.patientAge.value = '';
                 if (this.patientGender) this.patientGender.value = '';
                 if (this.patientNotes) this.patientNotes.value = '';
                 
-                // Обновляем списки
+                // Refresh lists
                 await this.updatePatientsStats();
                 await this.loadPatientsList();
             } else {
@@ -5662,10 +5662,10 @@ class LMStudioClone {
             
             this.logToConsole(`📥 Выгрузка базы данных в формате ${formatNames[format]}...`, 'info');
             
-            // Создаем URL с параметром формата
+            // Build URL with format param
             const url = `${this.apiBaseUrl}/patients-db/export?format=${format}`;
             
-            // Выполняем запрос
+            // Perform request
             const response = await fetch(url);
             
             if (!response.ok) {
@@ -5673,7 +5673,7 @@ class LMStudioClone {
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
-            // Получаем имя файла из заголовков
+            // Get filename from headers
             const contentDisposition = response.headers.get('Content-Disposition');
             let filename = `patients_db_backup_${new Date().toISOString().split('T')[0]}.${format === 'sqlite' ? 'db' : format === 'sql' ? 'sql' : format === 'json' ? 'json' : 'zip'}`;
             
@@ -5684,14 +5684,14 @@ class LMStudioClone {
                 }
             }
             
-            // Получаем данные
+            // Get data
             const blob = await response.blob();
             const fileSize = blob.size;
             const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
             const fileSizeKB = (fileSize / 1024).toFixed(2);
             const sizeText = fileSize > 1024 * 1024 ? `${fileSizeMB} MB` : `${fileSizeKB} KB`;
             
-            // Создаем ссылку для скачивания
+            // Create download link
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
@@ -5701,7 +5701,7 @@ class LMStudioClone {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
             
-            // Показываем информативное уведомление
+            // Show info notification
             const downloadPath = this.getDownloadPath();
             const successMessage = `База данных успешно выгружена!\n\n` +
                 `Файл: ${filename}\n` +
@@ -5732,14 +5732,14 @@ class LMStudioClone {
     }
     
     getDownloadPath() {
-        // Определяем путь к папке загрузок в зависимости от браузера и ОС
-        // В большинстве случаев это папка "Загрузки" (Downloads)
+        // Determine downloads path by browser and OS
+        // Usually the Downloads folder
         const userAgent = navigator.userAgent.toLowerCase();
         const platform = navigator.platform.toLowerCase();
         
         let path = 'папку "Загрузки" (Downloads)';
         
-        // Пытаемся определить более точный путь
+        // Try to determine more precise path
         if (platform.includes('win')) {
             path = 'папку "Загрузки" (Downloads) в вашем профиле пользователя';
         } else if (platform.includes('mac')) {
@@ -5748,7 +5748,7 @@ class LMStudioClone {
             path = 'папку "Загрузки" (Downloads) в вашем домашнем каталоге';
         }
         
-        // Добавляем информацию о том, как найти файл
+        // Add info on how to find the file
         return `${path}\n(Проверьте панель загрузок браузера или настройки браузера)`;
     }
     
@@ -5761,7 +5761,7 @@ class LMStudioClone {
         const mode = this.importDbMode?.value || 'merge';
         const filename = file.name.toLowerCase();
         
-        // Проверяем формат файла
+        // Check file format
         if (!filename.endsWith('.db') && !filename.endsWith('.sql') && !filename.endsWith('.json')) {
             this.logToConsole('❌ Неподдерживаемый формат файла. Используйте .db, .sql или .json', 'error');
             this.showNotification('❌ Неподдерживаемый формат файла. Используйте .db, .sql или .json', 'error');
@@ -5769,7 +5769,7 @@ class LMStudioClone {
             return;
         }
         
-        // Предупреждение для режима replace
+        // Warning for replace mode
         if (mode === 'replace') {
             const confirmMessage = filename.endsWith('.db') 
                 ? `⚠️ ВНИМАНИЕ: Вы собираетесь ЗАМЕНИТЬ всю базу данных!\n\n` +
@@ -5794,12 +5794,12 @@ class LMStudioClone {
             
             this.logToConsole(`📥 Импорт базы данных из файла: ${file.name} (режим: ${mode})...`, 'info');
             
-            // Создаем FormData
+            // Create FormData
             const formData = new FormData();
             formData.append('file', file);
             formData.append('mode', mode);
             
-            // Отправляем запрос
+            // Send request
             const response = await fetch(`${this.apiBaseUrl}/patients-db/import`, {
                 method: 'POST',
                 body: formData
@@ -5812,7 +5812,7 @@ class LMStudioClone {
             
             const result = await response.json();
             
-            // Показываем результат
+            // Show result
             const successMessage = result.message || 'База данных успешно импортирована';
             
             this.logToConsole(`✅ ${successMessage}`, 'success');
@@ -5828,7 +5828,7 @@ class LMStudioClone {
                 'success'
             );
             
-            // Обновляем статистику и список пациентов
+            // Update stats and patient list
             await this.updatePatientsStats();
             await this.loadPatientsList();
             
@@ -5842,7 +5842,7 @@ class LMStudioClone {
         } finally {
             this.importDatabaseBtn.disabled = false;
             this.importDatabaseBtn.innerHTML = '<i class="fas fa-upload"></i> Select File and Import';
-            // Очищаем input для возможности повторного выбора того же файла
+            // Clear input so same file can be selected again
             event.target.value = '';
         }
     }
@@ -5850,20 +5850,20 @@ class LMStudioClone {
     selectDocumentFile() {
         console.log('DEBUG: selectDocumentFile() вызвана');
         
-        // Предотвращаем множественные вызовы
+        // Prevent multiple calls
         if (this.addDocumentBtn.disabled) {
             console.log('DEBUG: Кнопка уже заблокирована, игнорируем вызов');
             return;
         }
         
-        // Проверяем, что выбран пациент
+        // Ensure patient is selected
         if (!this.selectedPatient || !this.selectedPatient.value) {
             this.logToConsole('❌ Выберите пациента из списка', 'error');
             console.log('DEBUG: Пациент не выбран');
             return;
         }
         
-        // Проверяем, что выбран тип документа
+        // Ensure document type is selected
         console.log('DEBUG: Проверяем documentType в selectDocumentFile:');
         console.log('DEBUG: this.documentType:', this.documentType);
         console.log('DEBUG: this.documentType.value:', this.documentType?.value);
@@ -5877,18 +5877,18 @@ class LMStudioClone {
         
         console.log(`DEBUG: Выбран пациент: ${this.selectedPatient.value}, тип документа: ${this.documentType.value}`);
         
-        // Временно блокируем кнопку
+        // Temporarily disable button
         this.addDocumentBtn.disabled = true;
         this.addDocumentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Выбор файла...';
         
-        // Открываем диалог выбора файлов
+        // Open file picker dialog
         if (this.documentFileInput) {
             this.documentFileInput.click();
             console.log('DEBUG: Диалог выбора файлов открыт');
         } else {
             this.logToConsole('❌ Элемент выбора файлов не найден', 'error');
             console.log('DEBUG: documentFileInput не найден');
-            // Восстанавливаем кнопку
+            // Restore button
             this.addDocumentBtn.disabled = false;
             this.addDocumentBtn.innerHTML = '<i class="fas fa-file-plus"></i> Добавить документ';
         }
@@ -5900,7 +5900,7 @@ class LMStudioClone {
         
         if (!files || files.length === 0) {
             console.log('DEBUG: Файлы не выбраны');
-            // Восстанавливаем кнопку
+            // Restore button
             this.addDocumentBtn.disabled = false;
             this.addDocumentBtn.innerHTML = '<i class="fas fa-file-plus"></i> Добавить документ';
             return;
@@ -5908,7 +5908,7 @@ class LMStudioClone {
         
         console.log(`DEBUG: Выбрано файлов: ${files.length}`);
         
-        // Обрабатываем каждый файл
+        // Process each file
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             console.log(`DEBUG: Обрабатываем файл ${i + 1}: ${file.name}`);
@@ -5921,10 +5921,10 @@ class LMStudioClone {
             }
         }
         
-        // Очищаем input для возможности повторного выбора того же файла
+        // Clear input so same file can be selected again
         event.target.value = '';
         
-        // Восстанавливаем кнопку
+        // Restore button
         this.addDocumentBtn.disabled = false;
         this.addDocumentBtn.innerHTML = '<i class="fas fa-file-plus"></i> Добавить документ';
         console.log('DEBUG: Кнопка восстановлена');
@@ -5933,10 +5933,10 @@ class LMStudioClone {
     async processDocumentFile(file) {
         console.log(`DEBUG: processDocumentFile() для файла: ${file.name}, тип: ${file.type || 'не определен'}`);
         
-        // Проверяем тип файла
+        // Check file type
         const fileExtension = file.name.toLowerCase().split('.').pop();
         const supportedExtensions = ['pdf', 'txt', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'];
-        // Поддерживаемые MIME типы (для обратной совместимости)
+        // Supported MIME types (for compatibility)
         const supportedTypes = [
             'application/pdf', 
             'text/plain', 
@@ -5948,9 +5948,9 @@ class LMStudioClone {
             'image/gif'
         ];
         
-        // Проверяем по расширению файла (более надежный способ)
+        // Check by file extension (more reliable)
         const isSupportedByExtension = supportedExtensions.includes(fileExtension);
-        // Проверяем по MIME типу (может быть пустым в некоторых браузерах)
+        // Check by MIME type (may be empty in some browsers)
         const isSupportedByType = file.type && supportedTypes.includes(file.type);
         
         if (!isSupportedByExtension && !isSupportedByType) {
@@ -5959,7 +5959,7 @@ class LMStudioClone {
             return;
         }
         
-        // Используем выбранный пользователем тип документа
+        // Use user-selected document type
         let documentType = 'other';
         console.log('DEBUG: Проверяем documentType элемент:', this.documentType);
         console.log('DEBUG: documentType.value:', this.documentType?.value);
@@ -5969,9 +5969,9 @@ class LMStudioClone {
             documentType = this.documentType.value;
             console.log(`DEBUG: Используется выбранный тип документа: ${documentType}`);
         } else {
-            // Fallback: определяем тип документа на основе расширения
+            // Fallback: infer document type from extension
             console.log('DEBUG: documentType не найден или не имеет значения, используем fallback');
-            // PDF теперь рассматривается как изображение (scan_result)
+            // PDF is treated as image (scan_result)
             if (fileExtension === 'pdf') {
                 documentType = 'scan_result';
             } else if (['doc', 'docx'].includes(fileExtension)) {
@@ -5984,11 +5984,11 @@ class LMStudioClone {
             console.log(`DEBUG: Тип документа определен автоматически как: ${documentType}`);
         }
         
-        // Читаем содержимое файла
+        // Read file content
         const content = await this.readFileContent(file);
         console.log(`DEBUG: Содержимое файла прочитано, длина: ${content.length}`);
         
-        // Добавляем документ к пациенту
+        // Add document to patient
         await this.addDocumentToPatient(content, documentType, file.name);
     }
     
@@ -6000,18 +6000,18 @@ class LMStudioClone {
         console.log(`DEBUG: readFileContent - файл: ${file.name}, расширение: ${fileExtension}, MIME тип: ${fileType}`);
         
         try {
-            // Обработка PDF файлов как изображений (OCR)
-            // Проверяем и по расширению, и по MIME типу
+            // Handle PDF as images (OCR)
+            // Check both extension and MIME type
             if (fileExtension === 'pdf' || fileType === 'application/pdf' || fileType === 'application/x-pdf') {
                 console.log('DEBUG: Обрабатываем PDF файл через OCR (как изображение)');
                 content = await this.extractTextFromPDF(file);
                 console.log('DEBUG: PDF файл обработан через OCR, длина текста:', content.length);
             }
-            // Обработка файлов Word
+            // Handle Word files
             else if (fileExtension === 'docx') {
                 console.log('DEBUG: Обрабатываем DOCX файл с помощью mammoth.js');
                 
-                // Проверяем наличие mammoth.js
+                // Check mammoth.js is available
                 if (typeof mammoth === 'undefined') {
                     throw new Error('Mammoth.js библиотека не загружена. Пожалуйста, обновите страницу.');
                 }
@@ -6028,23 +6028,23 @@ class LMStudioClone {
                 console.log('DEBUG: DOCX файл обработан, длина текста:', content.length);
                 console.log('DEBUG: Первые 200 символов текста:', content.substring(0, 200));
                 
-                // Проверяем, что текст не пустой
+                // Ensure text is not empty
                 if (!content.trim()) {
                     console.warn('DEBUG: Внимание! Извлеченный текст пустой');
                 }
             }
-            // Обработка старых файлов Word (.doc)
+            // Handle legacy Word (.doc)
             else if (fileExtension === 'doc') {
                 console.log('DEBUG: Файл .doc не поддерживается, используйте .docx');
                 throw new Error('Файлы .doc не поддерживаются. Пожалуйста, сохраните файл в формате .docx');
             }
-            // Обработка изображений через OCR
+            // Handle images via OCR
             else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
                 console.log('DEBUG: Обрабатываем изображение через OCR');
                 content = await this.extractTextFromImage(file);
                 console.log('DEBUG: Изображение обработано через OCR, длина текста:', content.length);
             }
-            // Для текстовых файлов читаем как текст
+            // For text files read as text
             else if ((file.type && file.type.startsWith('text/')) || fileExtension === 'txt') {
                 content = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -6054,7 +6054,7 @@ class LMStudioClone {
                 });
                 console.log('DEBUG: Текстовый файл прочитан, длина:', content.length);
             }
-            // Для остальных файлов читаем как base64 (fallback)
+            // For other files read as base64 (fallback)
             else {
                 content = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -6076,7 +6076,7 @@ class LMStudioClone {
         console.log(`DEBUG: addDocumentToPatient() для файла: ${fileName}`);
         
         try {
-            // Управляем кнопкой только если это не массовый импорт
+            // Control button only if not bulk import
             if (manageButton && this.addDocumentBtn) {
                 this.addDocumentBtn.disabled = true;
                 this.addDocumentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Добавление...';
@@ -6106,7 +6106,7 @@ class LMStudioClone {
             console.log('DEBUG: Данные ответа:', data);
             
             if (response.ok) {
-                // Логируем только если это не массовый импорт (чтобы не засорять консоль)
+                // Log only if not bulk import (avoid console spam)
                 if (manageButton) {
                     const fileExtension = fileName.toLowerCase().split('.').pop();
                     const documentTypeText = this.getDocumentTypeText(documentType);
@@ -6115,7 +6115,7 @@ class LMStudioClone {
                         : `✅ Документ "${fileName}" (${documentTypeText}) добавлен к пациенту (ID документа: ${data.id})`;
                     this.logToConsole(message, 'success');
                     
-                    // Обновляем статистику
+                    // Update stats
                     await this.updatePatientsStats();
                 }
             } else {
@@ -6123,13 +6123,13 @@ class LMStudioClone {
             }
         } catch (error) {
             console.log('DEBUG: Error:', error);
-            // Логируем только если это не массовый импорт (ошибки массового импорта обрабатываются отдельно)
+            // Log only if not bulk import (bulk errors handled separately)
             if (manageButton) {
                 this.logToConsole(`❌ Ошибка добавления документа "${fileName}": ${error.message}`, 'error');
             }
             throw error; // Пробрасываем ошибку дальше для обработки в массовом импорте
         } finally {
-            // Восстанавливаем кнопку только если мы её управляем
+            // Restore button only if we control it
             if (manageButton && this.addDocumentBtn) {
                 this.addDocumentBtn.disabled = false;
                 this.addDocumentBtn.innerHTML = '<i class="fas fa-file-plus"></i> Добавить документ';
@@ -6147,7 +6147,7 @@ class LMStudioClone {
         console.log('DEBUG: documentType:', this.documentType);
         console.log('DEBUG: documentType.value:', this.documentType?.value);
         
-        // Дополнительная проверка доступности элементов
+        // Extra check that elements exist
         if (!this.selectedPatient) {
             this.logToConsole('❌ Элемент выбора пациента не найден', 'error');
             console.log('DEBUG: selectedPatient элемент не найден');
@@ -6160,14 +6160,14 @@ class LMStudioClone {
             return;
         }
         
-        // Проверяем, что выбран пациент
+        // Ensure patient is selected
         if (!this.selectedPatient.value) {
             this.logToConsole('❌ Выберите пациента из списка', 'error');
             console.log('DEBUG: Пациент не выбран');
             return;
         }
         
-        // Проверяем, что введено содержимое документа
+        // Ensure document content is entered
         if (!this.documentContent) {
             this.logToConsole('❌ Поле содержимого документа не найдено', 'error');
             console.log('DEBUG: documentContent элемент не найден');
@@ -6182,7 +6182,7 @@ class LMStudioClone {
             console.log('DEBUG: documentContent.value.trim():', JSON.stringify(this.documentContent.value?.trim()));
             console.log('DEBUG: documentContent.value.trim().length:', this.documentContent.value?.trim()?.length);
             
-            // Попробуем получить значение напрямую из DOM
+            // Try to get value directly from DOM
             const directElement = document.getElementById('documentContent');
             if (directElement) {
                 console.log('DEBUG: Прямое обращение к элементу:');
@@ -6222,7 +6222,7 @@ class LMStudioClone {
             if (response.ok) {
                 this.logToConsole(`✅ Документ добавлен к пациенту (ID документа: ${data.id})`, 'success');
                 
-                // Очищаем содержимое документа
+                // Clear document content
                 if (this.documentContent) this.documentContent.value = '';
             } else {
                 throw new Error(data.detail || 'Ошибка добавления документа');
@@ -6231,7 +6231,7 @@ class LMStudioClone {
             console.log('DEBUG: Error:', error);
             this.logToConsole(`❌ Ошибка добавления документа: ${error.message}`, 'error');
         } finally {
-            // Восстанавливаем кнопку
+            // Restore button
             if (this.addDocumentBtn) {
                 this.addDocumentBtn.disabled = false;
                 this.addDocumentBtn.innerHTML = '<i class="fas fa-file-plus"></i> Добавить документ';
@@ -6239,7 +6239,7 @@ class LMStudioClone {
         }
     }
 
-    // Обновление информации о количестве пациентов для анализа
+    // Update patient count info for analysis
     updatePatientAnalysisCount() {
         if (!this.patientAnalysisPercent || !this.patientAnalysisCountValue) return;
         
@@ -6247,7 +6247,7 @@ class LMStudioClone {
         const totalPatients = this.allPatientsList.length;
         
         if (totalPatients === 0) {
-            // Если список еще не загружен, пытаемся загрузить
+            // If list not loaded yet, try to load
             this.loadPatientsList().then(() => {
                 this.updatePatientAnalysisCount();
             });
@@ -6262,7 +6262,7 @@ class LMStudioClone {
         }
     }
 
-    // Получение списка ID пациентов для анализа (с учетом процента)
+    // Get patient IDs for analysis (respecting percentage)
     getSelectedPatientIds() {
         const percent = parseFloat(this.patientAnalysisPercent?.value) || 100;
         const totalPatients = this.allPatientsList.length;
@@ -6275,7 +6275,7 @@ class LMStudioClone {
             return null; // null означает "все пациенты"
         }
         
-        // Выбираем случайные пациенты для тестирования
+        // Pick random patients for testing
         const count = Math.max(1, Math.round((totalPatients * percent) / 100));
         const shuffled = [...this.allPatientsList].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, count);
@@ -6283,7 +6283,7 @@ class LMStudioClone {
         return selected.map(p => p.id);
     }
 
-    // Автоматический анализ всех пациентов
+    // Automatic analysis of all patients
     async runPatientAnalysis() {
         const query = this.patientAnalysisQuestions?.value?.trim();
         if (!query) {
@@ -6295,11 +6295,11 @@ class LMStudioClone {
             return;
         }
 
-        // Используем системный промпт ТОЛЬКО из поля System Prompt (как в чате)
+        // Use system prompt ONLY from System Prompt field (same as chat)
         const useSystemPrompt = !!(this.useSystemPrompt?.checked && this.systemPrompt?.value?.trim());
         const systemPrompt = useSystemPrompt ? this.systemPrompt.value.trim() : null;
         
-        // Логируем для отладки
+        // Log for debugging
         console.log('DEBUG: runPatientAnalysis - системный промпт:', {
             useSystemPrompt: useSystemPrompt,
             systemPromptLength: systemPrompt ? systemPrompt.length : 0,
@@ -6309,7 +6309,7 @@ class LMStudioClone {
         const topK = 5; // Используем стандартное значение
         const contextLength = 200; // Используем стандартное значение
         
-        // Логируем значение чекбокса для отладки
+        // Log checkbox value for debugging
         console.log('DEBUG: runPatientAnalysis - MemoRAG настройки:', {
             checkboxElement: this.patientAnalysisUseMemoRag,
             checkboxChecked: this.patientAnalysisUseMemoRag?.checked,
@@ -6318,7 +6318,7 @@ class LMStudioClone {
             contextLength: contextLength
         });
 
-        // Удаляем префикс ollama: из имени модели, если он есть
+        // Remove ollama: prefix from model name if present
         let modelName = this.currentModel;
         if (modelName && modelName.startsWith('ollama:')) {
             modelName = modelName.replace('ollama:', '');
@@ -6330,7 +6330,7 @@ class LMStudioClone {
             return;
         }
         
-        // Загружаем список пациентов, если еще не загружен
+        // Load patient list if not loaded yet
         if (!this.allPatientsList || this.allPatientsList.length === 0) {
             try {
                 const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients`);
@@ -6344,7 +6344,7 @@ class LMStudioClone {
             }
         }
 
-        // Получаем список ID пациентов для анализа
+        // Get patient IDs for analysis
         const patientIds = this.getSelectedPatientIds();
         const percent = parseFloat(this.patientAnalysisPercent?.value) || 100;
         const totalPatients = this.allPatientsList.length;
@@ -6386,7 +6386,7 @@ class LMStudioClone {
             this.patientAnalysisProgress.style.display = 'block';
         }
         if (this.patientAnalysisProgressText) {
-            // Очищаем содержимое и добавляем иконку загрузки
+            // Clear content and add loading icon
             this.patientAnalysisProgressText.innerHTML = '';
             const spinner = document.createElement('i');
             spinner.className = 'fas fa-spinner fa-spin';
@@ -6402,11 +6402,11 @@ class LMStudioClone {
         if (this.patientAnalysisCurrentPatient) this.patientAnalysisCurrentPatient.textContent = '';
         if (this.patientAnalysisSummary) this.patientAnalysisSummary.style.display = 'none';
         
-        // Сбрасываем счетчики
+        // Reset counters
         this.patientAnalysisCurrent = 0;
         this.patientAnalysisTotal = 0;
         
-        // Очищаем накопленные результаты и останавливаем автосохранение
+        // Clear accumulated results and stop auto-save
         this.accumulatedResults = [];
         this.stopAutoSave();
         this.analysisStartTime = new Date(); // Сохраняем время начала анализа
@@ -6417,9 +6417,9 @@ class LMStudioClone {
         try {
             this.logToConsole('🔄 Начинается автоматический анализ всех пациентов...', 'info');
             
-            // Увеличиваем таймаут для больших наборов пациентов
-            // Для 163 пациентов при ~10 секунд на пациента = ~27 минут минимум
-            // Добавляем запас для надежности
+            // Increase timeout for large patient sets
+            // 163 patients at ~10 s each = ~27 min minimum
+            // Add buffer for reliability
             const timeoutMs = 3600000; // 60 минут (1 час) для очень больших наборов
             const response = await this.fetchWithTimeout(`${this.apiBaseUrl}/patients/batch-query`, {
                 method: 'POST',
@@ -6438,14 +6438,14 @@ class LMStudioClone {
             const success = data.success ?? 0;
             const failed = data.failed ?? 0;
 
-            // Активируем кнопку загрузки сразу после получения результатов
+            // Enable download button as soon as results are in
             if (this.downloadPatientAnalysisBtn && this.lastPatientAnalysisResults && this.lastPatientAnalysisResults.length > 0) {
                 this.downloadPatientAnalysisBtn.disabled = false;
                 console.log(`DEBUG: Кнопка загрузки активирована после получения результатов (${this.lastPatientAnalysisResults.length} результатов)`);
             }
 
-            // Если WebSocket сообщение о завершении не пришло, обрабатываем завершение здесь
-            // (fallback на случай разрыва WebSocket соединения)
+            // If WebSocket completion never came, handle completion here
+            // (fallback if WebSocket connection dropped)
             if (this.patientAnalysisProgress && this.patientAnalysisProgress.style.display !== 'none') {
                 this.handlePatientAnalysisComplete({
                     total: total,
@@ -6455,25 +6455,25 @@ class LMStudioClone {
                 });
             }
         } catch (e) {
-            // Проверяем, есть ли накопленные результаты через WebSocket
+            // Check if we have accumulated results via WebSocket
             const hasAccumulatedResults = this.accumulatedResults && this.accumulatedResults.length > 0;
             const isTimeoutError = e.message && (e.message.includes('Таймаут') || e.message.includes('timeout') || e.message.includes('Timeout'));
             
             if (hasAccumulatedResults && isTimeoutError) {
-                // Если есть результаты, но произошел таймаут - это частичный успех
-                // Результаты уже сохранены через WebSocket и автосохранение
+                // If we have results but timeout - partial success
+                // Results already saved via WebSocket and auto-save
                 this.logToConsole(`⚠️ Таймаут запроса, но получено ${this.accumulatedResults.length} результатов через WebSocket. Результаты сохранены.`, 'warning');
                 
-                // Активируем кнопку загрузки, если есть результаты
+                // Enable download button if we have results
                 if (this.downloadPatientAnalysisBtn && this.accumulatedResults.length > 0) {
                     this.downloadPatientAnalysisBtn.disabled = false;
                     console.log(`DEBUG: Кнопка загрузки активирована после таймаута (${this.accumulatedResults.length} результатов)`);
                 }
                 
-                // Обновляем lastPatientAnalysisResults из накопленных
+                // Update lastPatientAnalysisResults from accumulated
                 this.lastPatientAnalysisResults = [...this.accumulatedResults];
                 
-                // Показываем предупреждение вместо ошибки
+                // Show warning instead of error
                 if (this.patientAnalysisProgressText) {
                     const spinner = this.patientAnalysisProgressText.querySelector('i.fa-spinner');
                     if (spinner) {
@@ -6491,33 +6491,33 @@ class LMStudioClone {
                     this.patientAnalysisSummary.style.display = 'block';
                 }
             } else {
-                // Настоящая ошибка - нет результатов
+                // Real error - no results
                 this.logToConsole(`❌ Ошибка анализа пациентов: ${e.message}`, 'error');
                 
-                // Показываем ошибку в прогресс-баре
+                // Show error in progress bar
                 if (this.patientAnalysisProgressText) {
-                    // Удаляем иконку загрузки
+                    // Remove loading icon
                     const spinner = this.patientAnalysisProgressText.querySelector('i.fa-spinner');
                     if (spinner) {
                         spinner.remove();
                     }
-                    // Добавляем иконку ошибки
+                    // Add error icon
                     const errorIcon = document.createElement('i');
                     errorIcon.className = 'fas fa-exclamation-circle';
                     errorIcon.style.marginRight = '5px';
                     errorIcon.style.color = '#dc3545';
                     this.patientAnalysisProgressText.insertBefore(errorIcon, this.patientAnalysisProgressText.firstChild);
                     this.patientAnalysisProgressText.textContent = `❌ Ошибка анализа пациентов: ${e.message}`;
-                    // Вставляем иконку в начало
+                    // Insert icon at start
                     this.patientAnalysisProgressText.insertBefore(errorIcon, this.patientAnalysisProgressText.firstChild);
                 }
                 
-                // Устанавливаем красный цвет для прогресс-бара
+                // Set progress bar to red
                 if (this.patientAnalysisProgressFill) {
                     this.patientAnalysisProgressFill.style.backgroundColor = '#dc3545';
                 }
                 
-                // Показываем сводку с ошибкой
+                // Show summary with error
                 if (this.patientAnalysisSummary) {
                     this.patientAnalysisSummary.innerHTML = `
                         <strong style="color: #dc3545;">✗ Ошибка анализа</strong><br>
@@ -6528,15 +6528,15 @@ class LMStudioClone {
             }
         } finally {
             if (this.runPatientAnalysisBtn) this.runPatientAnalysisBtn.disabled = false;
-            // Останавливаем автосохранение при завершении (включая ошибки)
+            // Stop auto-save on completion (including errors)
             this.stopAutoSave();
-            // Выполняем финальное сохранение, если есть накопленные результаты
+            // Do final save if we have accumulated results
             if (this.accumulatedResults && this.accumulatedResults.length > 0) {
                 this.autoSaveToExcel();
             }
-            // НЕ скрываем прогресс автоматически - оставляем видимым для пользователя
-            // Пользователь может видеть результаты и сам решить, когда закрыть
-            // Прогресс будет скрыт только при следующем запуске анализа
+            // Do NOT hide progress automatically - leave visible for user
+            // User can see results and decide when to close
+            // Progress will be hidden only on next analysis run
         }
     }
 
@@ -6551,28 +6551,28 @@ class LMStudioClone {
             return;
         }
 
-        // Excel ограничение: максимум 32767 символов в ячейке
+        // Excel limit: max 32767 chars per cell
         const MAX_CELL_LENGTH = 32767;
         
-        // Функция для обрезки текста с добавлением сообщения
-        // Сохраняем КОНЕЦ текста (где находится ответ), обрезаем НАЧАЛО (где могут быть повторяющиеся вопросы)
+        // Truncate text and add message
+        // Keep END of text (where answer is), cut START (where repeated questions may be)
         const truncateText = (text, maxLength) => {
             if (!text || text.length <= maxLength) {
                 return text || '';
             }
             
-            // Размер сообщения об обрезке (примерно 150 символов)
+            // Truncation message size (~150 chars)
             const messageSize = 150;
             const availableLength = maxLength - messageSize;
             
-            // Сохраняем только конец текста (где находится ответ)
+            // Keep only end of text (where answer is)
             const end = text.substring(text.length - availableLength);
             const removedLength = text.length - availableLength;
             
             return `[... TEXT TRUNCATED: ${removedLength} chars removed from start (was ${text.length}, kept ${availableLength}). Start may have repeated questions ...]\n\n` + end;
         };
 
-        // Формируем данные с правильными названиями колонок
+        // Build data with correct column names
         const headers = ['Patient', 'final prompt', 'llm response'];
         const rows = results.map((row) => {
             const prompt = row.prompt || '';
@@ -6585,7 +6585,7 @@ class LMStudioClone {
             };
         });
 
-        // Подсчитываем, сколько текстов было обрезано
+        // Count how many texts were truncated
         let truncatedCount = 0;
         results.forEach((row) => {
             const prompt = row.prompt || '';
@@ -6610,7 +6610,7 @@ class LMStudioClone {
     
 }
 
-// Инициализация приложения
+// Application initialization
 document.addEventListener('DOMContentLoaded', () => {
     window.lmStudioClone = new LMStudioClone();
 });

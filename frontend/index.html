@@ -258,9 +258,9 @@ RESPONSE FORMAT:
                 </div>
             </aside>
 
-            <!-- Основная область -->
+            <!-- Main area -->
             <main class="main-content">
-                <!-- Вкладки -->
+                <!-- Tabs -->
                 <div class="tabs">
                     <div class="tab active" data-tab="chat">
                         <i class="fas fa-comments"></i>
@@ -280,13 +280,13 @@ RESPONSE FORMAT:
                     </div>
                 </div>
 
-                <!-- Контент вкладок -->
+                <!-- Tab content -->
                 <div class="tab-content">
-                    <!-- Вкладка чата -->
+                    <!-- Chat tab -->
                     <div id="chatTab" class="tab-panel active">
-                        <!-- Скроллируемый контейнер для всего контента чата -->
+                        <!-- Scrollable container for chat content -->
                         <div class="chat-scroll-container">
-                            <!-- Настройки чата -->
+                            <!-- Chat settings -->
                             <div class="chat-settings">
                             <div class="setting-group">
                             <label for="chatPatientSelect">Patient:</label>
@@ -342,7 +342,7 @@ RESPONSE FORMAT:
                                 <input type="file" id="importChatHistoryInput" accept=".json" style="display: none;">
                             </div>
 
-                            <!-- Автоматический анализ всех пациентов -->
+                            <!-- Automatic analysis of all patients -->
                             <div class="setting-group" style="border-top: 2px solid #3e3e42; padding-top: 15px; margin-top: 15px;">
                                 <h4 style="margin-bottom: 10px; color: #007acc;">
                                     <i class="fas fa-robot"></i> Automatic Patient Analysis
@@ -379,7 +379,7 @@ RESPONSE FORMAT:
                                         <i class="fas fa-spinner fa-spin"></i>
                                         <span id="patientAnalysisProgressText">Preparing analysis...</span>
                                     </div>
-                                    <!-- Прогресс-бар -->
+                                    <!-- Progress bar -->
                                     <div class="progress-bar" style="width: 100%; height: 20px; background-color: #3e3e42; border-radius: 10px; overflow: hidden; margin-top: 10px;">
                                         <div id="patientAnalysisProgressFill" class="progress-fill" style="height: 100%; background-color: #007acc; width: 0%; transition: width 0.3s ease;"></div>
                                     </div>
@@ -393,7 +393,7 @@ RESPONSE FORMAT:
 
                         </div>
                         
-                        <!-- Единое окно чата -->
+                        <!-- Unified chat window -->
                         <div id="chatMessages" class="unified-chat-window">
                             <div class="chat-entry system-entry">
                                 <span class="entry-label">System:</span>
@@ -401,7 +401,7 @@ RESPONSE FORMAT:
                             </div>
                         </div>
                         
-                        <!-- Поле ввода (закреплено внизу) -->
+                        <!-- Input field (pinned at bottom) -->
                         <div class="chat-input-container">
                             <div class="chat-input-wrapper">
                                 <textarea id="chatInput" placeholder="Enter your message..." rows="3"></textarea>
@@ -417,10 +417,10 @@ RESPONSE FORMAT:
                         </div>
                     </div>
 
-                    <!-- Вкладка RAG -->
+                    <!-- RAG tab -->
                     <div id="ragTab" class="tab-panel">
                         <div class="rag-container">
-                            <!-- Настройки RAG -->
+                            <!-- RAG settings -->
                             <div class="rag-settings">
                                 <h3><i class="fas fa-cog"></i> RAG Settings</h3>
                                 
@@ -528,7 +528,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Загрузка документов -->
+                            <!-- Document upload -->
                             <div class="rag-documents">
                                 <h3><i class="fas fa-file-upload"></i> Upload documents</h3>
                                 
@@ -564,7 +564,7 @@ RESPONSE FORMAT:
                                     <div id="uploadedFilesStatus" class="upload-status"></div>
                                 </div>
                                 
-                                <!-- Прогресс-бар для загрузки -->
+                                <!-- Upload progress bar -->
                                 <div id="uploadProgress" class="progress-container" style="display: none;">
                                     <div class="progress-header">
                                         <span id="progressTitle">Creating embeddings...</span>
@@ -595,7 +595,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Поиск в документах -->
+                            <!-- Search in documents -->
                             <div class="rag-search">
                                 <h3><i class="fas fa-search"></i> Search documents</h3>
                                 
@@ -616,7 +616,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Управление RAG -->
+                            <!-- RAG management -->
                             <div class="rag-management">
                                 <h3><i class="fas fa-tools"></i> Management</h3>
                                 
@@ -650,7 +650,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Логи RAG -->
+                            <!-- RAG logs -->
                             <div class="rag-logs">
                                 <h3><i class="fas fa-file-alt"></i> RAG logs</h3>
                                 
@@ -683,11 +683,11 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- MemoRAG система -->
+                            <!-- MemoRAG system -->
                             <div class="memorag-section">
                                 <h3><i class="fas fa-brain"></i> MemoRAG - Advanced memory</h3>
                                 
-                                <!-- Настройки MemoRAG -->
+                                <!-- MemoRAG settings -->
                                 <div class="memorag-settings">
                                     <div class="setting-group">
                                         <label>
@@ -719,7 +719,7 @@ RESPONSE FORMAT:
                                     </div>
                                 </div>
 
-                                <!-- Статистика MemoRAG -->
+                                <!-- MemoRAG stats -->
                                 <div class="memorag-stats">
                                     <h4><i class="fas fa-chart-bar"></i> Memory stats</h4>
                                     <div class="stats-grid">
@@ -758,7 +758,7 @@ RESPONSE FORMAT:
                                     </div>
                                 </div>
 
-                                <!-- Управление MemoRAG -->
+                                <!-- MemoRAG management -->
                                 <div class="memorag-management">
                                     <h4><i class="fas fa-tools"></i> Memory management</h4>
                                     
@@ -797,7 +797,7 @@ RESPONSE FORMAT:
                                     </div>
                                 </div>
 
-                                <!-- Тестирование MemoRAG -->
+                                <!-- MemoRAG testing -->
                                 <div class="memorag-testing">
                                     <h4><i class="fas fa-search"></i> MemoRAG testing</h4>
                                     
@@ -832,12 +832,12 @@ RESPONSE FORMAT:
                         </div>
                     </div>
 
-                    <!-- Вкладка Пациенты -->
+                    <!-- Patients tab -->
                     <div id="patientsTab" class="tab-panel">
                         <div class="patients-container">
                             <h3><i class="fas fa-user-md"></i> Patient management</h3>
                             
-                            <!-- Статистика пациентов -->
+                            <!-- Patients stats -->
                             <div class="patients-stats">
                                 <div class="stat-item">
                                     <span class="stat-label">Total patients:</span>
@@ -853,11 +853,11 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Выгрузка и импорт базы данных -->
+                            <!-- Database export/import -->
                             <div class="patients-export-section" style="margin-top: 20px; padding: 15px; background: var(--card-bg, #f5f5f5); border-radius: 8px;">
                                 <h4><i class="fas fa-database"></i> Database Export/Import</h4>
                                 
-                                <!-- Экспорт -->
+                                <!-- Export -->
                                 <div class="setting-group" style="margin-bottom: 20px;">
                                     <h5 style="margin-bottom: 10px;"><i class="fas fa-download"></i> Export Database</h5>
                                     <label>Export format:</label>
@@ -877,7 +877,7 @@ RESPONSE FORMAT:
                                     </small>
                                 </div>
                                 
-                                <!-- Импорт -->
+                                <!-- Import -->
                                 <div class="setting-group" style="border-top: 1px solid #ddd; padding-top: 15px;">
                                     <h5 style="margin-bottom: 10px;"><i class="fas fa-upload"></i> Import Database</h5>
                                     <label>Import mode:</label>
@@ -898,7 +898,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Управление пациентами -->
+                            <!-- Patient management -->
                             <div class="patients-management">
                                 <h4><i class="fas fa-plus"></i> Add patient</h4>
                                 
@@ -934,7 +934,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Управление документами -->
+                            <!-- Document management -->
                             <div class="documents-management">
                                 <h4><i class="fas fa-file-medical"></i> Document management</h4>
                                 
@@ -987,12 +987,12 @@ RESPONSE FORMAT:
                                     </div>
                                 </div>
                                 
-                                <!-- Скрытый input для выбора файлов -->
+                                <!-- Hidden file input -->
                                 <input type="file" id="documentFileInput" style="display: none;" multiple accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif">
                                 <input type="file" id="visionLlmFileInput" style="display: none;" accept=".pdf">
                             </div>
 
-                            <!-- Пакетный запрос к LLM по всем пациентам -->
+                            <!-- Batch LLM query for all patients -->
                             <div class="batch-query-section">
                                 <h4><i class="fas fa-robot"></i> Batch LLM query</h4>
 
@@ -1037,7 +1037,7 @@ RESPONSE FORMAT:
                                 <div id="batchQuerySummary" class="info-message" style="display: none;"></div>
                             </div>
 
-                            <!-- Список пациентов -->
+                            <!-- Patient list -->
                             <div class="patients-list">
                                 <h4><i class="fas fa-list"></i> Patient list</h4>
                                 <div id="patientsList" class="patients-list-container">
@@ -1045,7 +1045,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Управление базой данных -->
+                            <!-- Database management -->
                             <div class="database-management">
                                 <h4><i class="fas fa-database"></i> Database management</h4>
                                 
@@ -1068,7 +1068,7 @@ RESPONSE FORMAT:
                                 </div>
                             </div>
 
-                            <!-- Массовый импорт пациентов -->
+                            <!-- Bulk patient import -->
                             <div class="mass-import-section">
                                 <h4><i class="fas fa-upload"></i> Bulk patient import</h4>
                                 
@@ -1108,7 +1108,7 @@ RESPONSE FORMAT:
                                     </div>
                                 </div>
                                 
-                                <!-- Прогресс импорта -->
+                                <!-- Import progress -->
                                 <div id="massImportProgress" class="import-progress" style="display: none;">
                                     <div class="progress-header">
                                         <span id="progressStatus">Preparing import...</span>
@@ -1134,7 +1134,7 @@ RESPONSE FORMAT:
                         </div>
                     </div>
 
-                    <!-- Вкладка API -->
+                    <!-- API tab -->
                     <div id="apiTab" class="tab-panel">
                         <div class="api-container">
                             <h3>OpenAI-compatible API</h3>
@@ -1170,16 +1170,16 @@ RESPONSE FORMAT:
         </div>
     </div>
 
-    <!-- Библиотеки для обработки файлов -->
-    <!-- PDF.js для обработки PDF файлов -->
+    <!-- File processing libraries -->
+    <!-- PDF.js for PDF files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Mammoth.js для обработки DOCX файлов -->
+    <!-- Mammoth.js for DOCX files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <!-- SheetJS для экспорта в XLSX -->
+    <!-- SheetJS for XLSX export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Основной скрипт приложения -->
+    <!-- Main application script -->
     <script src="/static/script.js"></script>
-    <!-- Модуль OCR (выделен из основного скрипта) -->
+    <!-- OCR module (separate from main script) -->
     <script src="/static/js/ocr.js"></script>
     <script src="/static/js/patients.js"></script>
 </body>
