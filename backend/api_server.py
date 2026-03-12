@@ -2789,7 +2789,7 @@ async def get_memory_stats():
 
 @app.delete("/memorag/memory")
 async def clear_memorag_memory():
-    """Очистка глобальной памяти MemoRAG"""
+    """Clear global MemoRAG memory."""
     try:
         memo_rag = await get_memo_rag_system()
         
@@ -2814,7 +2814,7 @@ async def clear_memorag_memory():
 
 @app.get("/memorag/memory-debug")
 async def get_memory_debug_info():
-    """Получение отладочной информации о памяти MemoRAG"""
+    """Get debug information about MemoRAG memory."""
     try:
         memo_rag = await get_memo_rag_system()
         debug_info = memo_rag.check_memory_content_lengths()
@@ -2828,7 +2828,7 @@ async def get_memory_debug_info():
 
 @app.post("/memorag/migrate-existing")
 async def migrate_existing_rag_to_memorag():
-    """Миграция существующих данных RAG в MemoRAG память"""
+    """Migrate existing RAG data into MemoRAG memory."""
     try:
         global rag_system
         if rag_system is None:
@@ -2860,7 +2860,7 @@ async def migrate_existing_rag_to_memorag():
 
 @app.get("/memorag/migrate-status")
 async def get_migration_status():
-    """Проверка статуса миграции данных с таймаутами"""
+    """Check migration status with timeouts."""
     try:
         import asyncio
         
@@ -3028,7 +3028,7 @@ if __name__ == "__main__":
 # API эндпоинты для пациентов
 @app.get("/patients/stats", response_model=PatientsStatsResponse)
 async def get_patients_stats():
-    """Получение статистики базы данных пациентов"""
+    """Get patient database statistics."""
     try:
         db = get_patients_database()
         stats = db.get_statistics()
@@ -3038,7 +3038,7 @@ async def get_patients_stats():
 
 @app.get("/patients", response_model=List[PatientResponse])
 async def get_all_patients():
-    """Получение списка всех пациентов"""
+    """Get list of all patients."""
     try:
         db = get_patients_database()
         patients = db.get_all_patients()
@@ -3048,7 +3048,7 @@ async def get_all_patients():
 
 @app.post("/patients", response_model=PatientResponse)
 async def add_patient(patient: PatientRequest):
-    """Добавление нового пациента"""
+    """Add a new patient."""
     try:
         db = get_patients_database()
         patient_id = db.add_patient(
@@ -3070,7 +3070,7 @@ async def add_patient(patient: PatientRequest):
 
 @app.get("/patients/{patient_id}", response_model=PatientResponse)
 async def get_patient(patient_id: int):
-    """Получение информации о пациенте"""
+    """Get patient information."""
     try:
         db = get_patients_database()
         patient = db.get_patient(patient_id)
@@ -3083,7 +3083,7 @@ async def get_patient(patient_id: int):
 
 @app.put("/patients/{patient_id}", response_model=PatientResponse)
 async def update_patient(patient_id: int, patient: PatientRequest):
-    """Обновление информации о пациенте"""
+    """Update patient information."""
     try:
         db = get_patients_database()
         success = db.update_patient(
@@ -3108,7 +3108,7 @@ async def update_patient(patient_id: int, patient: PatientRequest):
 
 @app.delete("/patients/clear-database")
 async def clear_patients_database():
-    """Полная очистка базы данных пациентов"""
+    """Fully clear the patient database."""
     print("DEBUG: Эндпоинт clear_patients_database вызван")
     try:
         db = get_patients_database()
@@ -3654,7 +3654,7 @@ async def import_patients_database(
 
 @app.delete("/patients/{patient_id}")
 async def delete_patient(patient_id: int):
-    """Удаление пациента"""
+    """Delete a patient."""
     try:
         db = get_patients_database()
         success = db.delete_patient(patient_id)
@@ -3669,7 +3669,7 @@ async def delete_patient(patient_id: int):
 
 @app.post("/patients/{patient_id}/documents", response_model=DocumentResponse)
 async def add_document_to_patient(patient_id: int, document: DocumentRequest):
-    """Добавление документа к пациенту"""
+    """Add a document to a patient."""
     try:
         db = get_patients_database()
         
@@ -3705,7 +3705,7 @@ async def add_vision_llm_document(
     filename: Optional[str] = Form(None),
     model: Optional[str] = Form(None)
 ):
-    """Извлечение данных из PDF через Vision-LLM и добавление документа пациенту"""
+    """Extract data from PDF via Vision-LLM and add document to patient."""
     try:
         db = get_patients_database()
         patient = db.get_patient(patient_id)
@@ -3827,7 +3827,7 @@ async def add_vision_llm_document(
 
 @app.get("/patients/{patient_id}/documents", response_model=List[DocumentResponse])
 async def get_patient_documents(patient_id: int):
-    """Получение документов пациента"""
+    """Get patient documents."""
     try:
         db = get_patients_database()
         
@@ -3844,7 +3844,7 @@ async def get_patient_documents(patient_id: int):
 
 @app.get("/patients/{patient_id}/full", response_model=Dict[str, Any])
 async def get_patient_full_info(patient_id: int):
-    """Получение полной информации о пациенте (все поля + документы)"""
+    """Get full patient information (all fields + documents)."""
     try:
         db = get_patients_database()
         
@@ -3869,7 +3869,7 @@ async def get_patient_full_info(patient_id: int):
 
 @app.post("/patients/batch-query", response_model=BatchPatientQueryResponse)
 async def batch_query_patients(request: BatchPatientQueryRequest):
-    """Пакетный запрос к LLM для всех пациентов"""
+    """Batch LLM query for all patients."""
     if not request.query or not request.query.strip():
         raise HTTPException(status_code=400, detail="Запрос не может быть пустым")
 
@@ -4261,7 +4261,7 @@ async def batch_query_patients(request: BatchPatientQueryRequest):
 
 @app.delete("/patients/documents/{document_id}")
 async def delete_document(document_id: int):
-    """Удаление документа"""
+    """Delete a document."""
     try:
         db = get_patients_database()
         success = db.delete_document(document_id)
@@ -4277,7 +4277,7 @@ async def delete_document(document_id: int):
 # OCR эндпоинты
 @app.post("/ocr/extract-text")
 async def extract_text_from_image(file: UploadFile = File(...)):
-    """Извлечение текста из загруженного изображения с помощью OCR"""
+    """Extract text from uploaded image using OCR."""
     try:
         # Проверяем, что файл является изображением
         if not file.content_type or not file.content_type.startswith('image/'):
@@ -4306,7 +4306,7 @@ async def extract_text_from_image(file: UploadFile = File(...)):
 
 @app.get("/ocr/status")
 async def get_ocr_status():
-    """Проверка статуса OCR системы"""
+    """Check OCR system status."""
     try:
         processor = get_ocr_processor()
         is_available = processor.is_tesseract_available()
@@ -4326,7 +4326,7 @@ async def get_ocr_status():
 
 @app.post("/ocr/test")
 async def test_ocr():
-    """Тестирование OCR системы"""
+    """Test OCR system."""
     try:
         processor = get_ocr_processor()
         

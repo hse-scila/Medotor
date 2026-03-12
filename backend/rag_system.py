@@ -159,7 +159,7 @@ class RAGSystem:
                 self.embedding_model = None
     
     def _initialize_vector_store(self, force_reset: bool = False):
-        """Инициализация векторного хранилища"""
+        """Initialize vector store."""
         if self.vector_store_type == "faiss":
             self._initialize_faiss(force_reset)
         elif self.vector_store_type == "chroma":
@@ -168,7 +168,7 @@ class RAGSystem:
             raise ValueError(f"Неподдерживаемый тип векторного хранилища: {self.vector_store_type}")
     
     def _initialize_faiss(self, force_reset: bool = False):
-        """Инициализация FAISS"""
+        """Initialize FAISS."""
         if not FAISS_AVAILABLE:
             raise ImportError("FAISS не установлен")
         
@@ -240,7 +240,7 @@ class RAGSystem:
         logger.info("[OK] FAISS векторное хранилище инициализировано")
     
     def _initialize_chroma(self, force_reset: bool = False):
-        """Инициализация ChromaDB"""
+        """Initialize ChromaDB."""
         if not CHROMA_AVAILABLE:
             raise ImportError("ChromaDB не установлен")
         
@@ -297,7 +297,7 @@ class RAGSystem:
             raise
     
     async def add_documents(self, documents: List[str], metadata: Optional[List[Dict]] = None, progress_callback=None):
-        """Добавление документов в векторное хранилище"""
+        """Add documents to the vector store."""
         start_time = time.time()
         
         if not self.use_ollama and not self.embedding_model:
@@ -373,7 +373,7 @@ class RAGSystem:
             raise
     
     async def _add_documents_faiss(self, documents: List[str], metadata: List[Dict], progress_callback=None):
-        """Добавление документов в FAISS"""
+        """Add documents to FAISS."""
         # Создаем эмбеддинги
         if self.use_ollama:
             # Проверяем и обновляем размерность ПЕРЕД созданием эмбеддингов
@@ -440,7 +440,7 @@ class RAGSystem:
         logger.info(f"[OK] FAISS индекс сохранен на диск")
     
     async def _add_documents_chroma(self, documents: List[str], metadata: List[Dict]):
-        """Добавление документов в ChromaDB"""
+        """Add documents to ChromaDB."""
         # Создаем ID для документов
         ids = [f"doc_{len(self.documents) + i}" for i in range(len(documents))]
         
@@ -504,7 +504,7 @@ class RAGSystem:
             self.documents_count += len(unique_sources)
     
     async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Поиск похожих документов"""
+        """Search for similar documents."""
         start_time = time.time()
         
         if not self.use_ollama and not self.embedding_model:
@@ -533,7 +533,7 @@ class RAGSystem:
             raise
     
     async def _search_faiss(self, query: str, top_k: int) -> List[Dict[str, Any]]:
-        """Поиск в FAISS"""
+        """Search in FAISS."""
         if self.index.ntotal == 0:
             return []
         
@@ -564,7 +564,7 @@ class RAGSystem:
         return results
     
     async def _search_chroma(self, query: str, top_k: int) -> List[Dict[str, Any]]:
-        """Поиск в ChromaDB"""
+        """Search in ChromaDB."""
         try:
             if self.use_ollama:
                 # Для Ollama создаем эмбеддинг запроса вручную
@@ -598,7 +598,7 @@ class RAGSystem:
             return []
     
     def _save_faiss_index(self):
-        """Сохранение FAISS индекса на диск"""
+        """Save FAISS index to disk."""
         try:
             index_path = self.data_dir / f"{self.collection_name}_faiss.index"
             metadata_path = self.data_dir / f"{self.collection_name}_metadata.json"
@@ -631,7 +631,7 @@ class RAGSystem:
             logger.error(f"Ошибка сохранения FAISS индекса: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Получение статистики векторного хранилища"""
+        """Get vector store statistics."""
         stats = {
             "vector_store_type": self.vector_store_type,
             "collection_name": self.collection_name,
@@ -713,7 +713,7 @@ class RAGSystem:
         return stats
     
     def _split_text_into_chunks(self, text: str, chunk_size: int = None, overlap: int = None) -> List[str]:
-        """Разбиение текста на чанки для лучшей обработки в RAG"""
+        """Split text into chunks for better RAG processing."""
         if not text:
             return []
         
@@ -767,7 +767,7 @@ class RAGSystem:
         return chunks
     
     def clear_all(self):
-        """Очистка всех документов"""
+        """Clear all documents."""
         if self.vector_store_type == "faiss":
             # Сбрасываем индекс в памяти
             self.index.reset()
@@ -812,7 +812,7 @@ class RAGSystem:
         logger.info("[OK] Все документы удалены")
     
     async def switch_vector_store(self, new_type: str):
-        """Переключение типа векторного хранилища"""
+        """Switch vector store type."""
         if new_type.lower() not in ["faiss", "chroma"]:
             raise ValueError("Поддерживаются только faiss и chroma")
         
@@ -842,7 +842,7 @@ class RAGSystem:
 rag_system = None
 
 async def get_rag_system(vector_store_type: Optional[str] = None, use_ollama: Optional[bool] = None, force_reset: bool = False, chunk_size: Optional[int] = None, chunk_overlap: Optional[int] = None) -> RAGSystem:
-    """Получение глобального экземпляра RAG системы"""
+    """Return the global RAG system instance."""
     global rag_system
     
     if vector_store_type is None or use_ollama is None:

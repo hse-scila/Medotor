@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Скрипт для управления конфигурацией LM Studio Project
+Script for managing LM Studio Project configuration.
 """
 
 import argparse
@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).parent / "backend"))
 from config import ConfigManager, get_config
 
 def show_config():
-    """Показать текущую конфигурацию"""
+    """Show current configuration."""
     config = get_config()
     
     print("🔧 Текущая конфигурация LM Studio Project")
@@ -45,7 +45,7 @@ def show_config():
             print(f"   - {warning}")
 
 def show_full_config():
-    """Показать полную конфигурацию"""
+    """Show full configuration."""
     config = get_config()
     
     print("🔧 Полная конфигурация LM Studio Project")
@@ -149,24 +149,24 @@ def show_full_config():
     print(f"   Проверки здоровья: {config.system.enable_health_checks}")
 
 def create_config_file(config_path: str):
-    """Создать файл конфигурации"""
+    """Create configuration file."""
     config_manager = ConfigManager(config_path)
     print(f"✅ Создан файл конфигурации: {config_path}")
 
 def reload_config():
-    """Перезагрузить конфигурацию"""
+    """Reload configuration."""
     config = get_config()
     config.reload_config()
     print("✅ Конфигурация перезагружена")
 
 def save_config():
-    """Сохранить конфигурацию"""
+    """Save configuration."""
     config = get_config()
     config.save_config()
     print("✅ Конфигурация сохранена")
 
 def validate_config():
-    """Валидировать конфигурацию"""
+    """Validate configuration."""
     config = get_config()
     validation = config.validate_config()
     
@@ -183,7 +183,7 @@ def validate_config():
             print(f"   - {warning}")
 
 def main():
-    """Основная функция"""
+    """Main entry point."""
     parser = argparse.ArgumentParser(description="Управление конфигурацией LM Studio Project")
     parser.add_argument("--config", "-c", help="Путь к файлу конфигурации")
     parser.add_argument("--show", "-s", action="store_true", help="Показать текущую конфигурацию")

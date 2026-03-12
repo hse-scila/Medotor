@@ -220,7 +220,7 @@ class FileProcessor:
         return text_content.strip()
     
     def _split_text_into_chunks(self, text: str, chunk_size: Optional[int] = None, overlap: Optional[int] = None) -> List[str]:
-        """Разбиение текста на чанки для лучшей обработки в RAG"""
+        """Split text into chunks for better RAG processing."""
         if not text:
             return []
         
@@ -310,7 +310,7 @@ class FileProcessor:
         return chunks
     
     def cleanup_temp_file(self, file_path: str):
-        """Удаление временного файла"""
+        """Remove a temporary file."""
         try:
             path = Path(file_path)
             if path.exists():
@@ -320,7 +320,7 @@ class FileProcessor:
             logger.warning(f"Failed to delete temporary file {file_path}: {e}")
     
     def cleanup_all_temp_files(self):
-        """Удаление всех временных файлов"""
+        """Remove all temporary files."""
         try:
             for file_path in self.temp_dir.iterdir():
                 if file_path.is_file():
@@ -330,7 +330,7 @@ class FileProcessor:
             logger.warning(f"Error cleaning temporary files: {e}")
     
     def get_file_info(self, file_path: str) -> Dict[str, Any]:
-        """Получение информации о файле"""
+        """Get file information."""
         try:
             path = Path(file_path)
             if not path.exists():
@@ -355,5 +355,5 @@ class FileProcessor:
 file_processor = FileProcessor()
 
 def get_file_processor() -> FileProcessor:
-    """Получение глобального экземпляра процессора файлов"""
+    """Return the global file processor instance."""
     return file_processor

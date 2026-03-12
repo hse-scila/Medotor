@@ -130,13 +130,13 @@ class GlobalMemory:
         return summary
 
 class ClueGenerator:
-    """Генератор подсказок для ретривера"""
+    """Hint generator for the retriever."""
     
     def __init__(self, memory: GlobalMemory):
         self.memory = memory
     
     def generate_clues(self, user_query: str, memory_context: List[MemoryEntry]) -> List[Clue]:
-        """Генерирует подсказки на основе пользовательского запроса и контекста памяти"""
+        """Generate hints based on user query and memory context."""
         clues = []
         
         # Main hint based on query
@@ -171,14 +171,14 @@ class ClueGenerator:
         return clues
     
     def _extract_context_hints(self, memory_context: List[MemoryEntry]) -> List[str]:
-        """Извлекает контекстные подсказки из памяти"""
+        """Extract context hints from memory."""
         hints = []
         for entry in memory_context:
             hints.extend(entry.keywords[:3])  # Топ 3 ключевых слова
         return list(set(hints))  # Убираем дубликаты
 
 class MemoRAGSystem:
-    """Основная система MemoRAG"""
+    """Main MemoRAG system."""
     
     def __init__(self, base_rag_system, memory_size: int = 10000, context_length: int = 200):
         self.base_rag = base_rag_system
@@ -191,7 +191,7 @@ class MemoRAGSystem:
         self._load_memory()
     
     def _load_memory(self) -> None:
-        """Загружает память из файла"""
+        """Load memory from file."""
         if self.memory_file.exists():
             try:
                 with open(self.memory_file, 'rb') as f:
@@ -204,7 +204,7 @@ class MemoRAGSystem:
                 logger.error(f"Error loading memory: {e}")
     
     def _save_memory(self) -> None:
-        """Сохраняет память в файл"""
+        """Save memory to file."""
         try:
             self.memory_file.parent.mkdir(parents=True, exist_ok=True)
             data = {
@@ -219,7 +219,7 @@ class MemoRAGSystem:
             logger.error(f"Error saving memory: {e}")
     
     async def add_documents(self, documents: List[str], metadata: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-        """Добавляет документы в MemoRAG систему"""
+        """Add documents to the MemoRAG system."""
         try:
             # Add documents to base RAG system (if available)
             if self.base_rag is not None:
@@ -265,7 +265,7 @@ class MemoRAGSystem:
             }
     
     def _extract_keywords(self, text: str) -> List[str]:
-        """Извлекает ключевые слова из текста"""
+        """Extract keywords from text."""
         # Simple implementation - can be replaced with more complex one
         words = text.lower().split()
         
@@ -279,7 +279,7 @@ class MemoRAGSystem:
         return [word for word, count in word_counts.most_common(10)]
     
     def _calculate_importance(self, text: str) -> float:
-        """Вычисляет важность документа"""
+        """Calculate document importance."""
         # Simple heuristic - can be replaced with more complex model
         importance = 0.5  # Базовая важность
         
@@ -296,7 +296,7 @@ class MemoRAGSystem:
         return min(importance, 1.0)  # Ограничиваем максимумом 1.0
     
     def _classify_memory_type(self, text: str) -> str:
-        """Классифицирует тип памяти"""
+        """Classify memory type."""
         text_lower = text.lower()
         
         if any(word in text_lower for word in ['определение', 'это', 'означает']):
@@ -309,7 +309,7 @@ class MemoRAGSystem:
             return "fact"
     
     async def search_with_memory(self, query: str, top_k: int = 5) -> Dict[str, Any]:
-        """Поиск с использованием глобальной памяти"""
+        """Search using global memory."""
         # 1. Search in global memory
         memory_results = self.global_memory.search_memory(query, top_k=5)
         
@@ -382,7 +382,7 @@ class MemoRAGSystem:
         }
     
     def _deduplicate_results(self, results: List[Dict]) -> List[Dict]:
-        """Удаляет дубликаты из результатов"""
+        """Remove duplicates from results."""
         seen_texts = set()
         unique_results = []
         
@@ -395,7 +395,7 @@ class MemoRAGSystem:
         return unique_results
     
     def _rank_results(self, results: List[Dict], query: str, memory_context: List[MemoryEntry]) -> List[Dict]:
-        """Ранжирует результаты с учетом памяти"""
+        """Rank results taking memory into account."""
         for result in results:
             base_score = result.get('score', 0)
             
@@ -414,7 +414,7 @@ class MemoRAGSystem:
         return sorted(results, key=lambda x: x.get('final_score', 0), reverse=True)
     
     async def chat_with_memory(self, messages: List[Dict], use_memory: bool = True) -> Dict[str, Any]:
-        """Чат с использованием MemoRAG"""
+        """Chat using MemoRAG."""
         if not messages:
             return {'response': 'Нет сообщений для обработки'}
         
@@ -467,7 +467,7 @@ class MemoRAGSystem:
             return {'response': 'Обычный ответ без памяти'}
     
     def get_memory_stats(self) -> Dict[str, Any]:
-        """Получает статистику памяти"""
+        """Get memory statistics."""
         return {
             'total_entries': len(self.global_memory.memory_entries),
             'memory_types': {
@@ -484,7 +484,7 @@ class MemoRAGSystem:
         }
     
     def clear_memory(self) -> None:
-        """Очищает глобальную память"""
+        """Clear global memory."""
         self.global_memory.memory_entries.clear()
         self.global_memory.memory_index.clear()
         self.global_memory.summary_cache.clear()
@@ -496,7 +496,7 @@ class MemoRAGSystem:
         logger.info("Global memory cleared")
     
     def set_context_length(self, length: int) -> None:
-        """Устанавливает размер контекста для отображения"""
+        """Set the context length for display."""
         if length < 50:
             length = 50  # Минимальный размер
         elif length > 2000:
@@ -513,7 +513,7 @@ class MemoRAGSystem:
         print(f"DEBUG: Context size set: {length} characters")
     
     def _update_memory_context_length(self, new_length: int) -> None:
-        """Обновляет размер контекста существующих записей в памяти"""
+        """Update context length of existing memory entries."""
         updated_count = 0
         for entry in self.global_memory.memory_entries:
             # If entry was truncated and new size is larger
@@ -526,7 +526,7 @@ class MemoRAGSystem:
         print(f"DEBUG: Updated {updated_count} entries in memory")
     
     def check_memory_content_lengths(self) -> Dict[str, Any]:
-        """Проверяет длины контента в памяти для отладки"""
+        """Check content lengths in memory for debugging."""
         lengths = []
         short_entries = 0
         truncated_entries = 0

@@ -1,6 +1,6 @@
 """
-Централизованная система конфигурации для LM Studio Project
-Управление настройками подключений, окружений и сервисов
+Centralized configuration system for LM Studio Project.
+Manages connection settings, environments, and services.
 """
 
 import os

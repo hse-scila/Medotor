@@ -189,17 +189,17 @@ class OCRProcessor:
             return 0.0
     
     def _is_image_file(self, file_path: str) -> bool:
-        """Проверка, является ли файл изображением"""
+        """Check whether the file is an image."""
         image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif'}
         _, ext = os.path.splitext(file_path.lower())
         return ext in image_extensions
     
     def get_supported_formats(self) -> list:
-        """Получение списка поддерживаемых форматов"""
+        """Get list of supported formats."""
         return ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif']
     
     def is_tesseract_available(self) -> bool:
-        """Проверка доступности Tesseract"""
+        """Check Tesseract availability."""
         try:
             pytesseract.get_tesseract_version()
             return True
@@ -210,7 +210,7 @@ class OCRProcessor:
 ocr_processor = None
 
 def get_ocr_processor() -> OCRProcessor:
-    """Получение глобального экземпляра OCR процессора"""
+    """Return the global OCR processor instance."""
     global ocr_processor
     if ocr_processor is None:
         try:
